@@ -37,9 +37,7 @@ function PropertyCardComponent({ data, layout = "grid" }: PropertyCardProps) {
     (isRental && data.gia_cho_thue_gia_ban ? " / tháng" : "");
   const location = getLarkPropertyLocation(data);
   const badge =
-    data.danh_muc_bds?.name ??
-    data.loai_hinh_kinh_doanh_bat_dong_san_dich_vu?.name ??
-    "";
+    data.danh_muc_bds?.name ?? data.loai_hinh_kinh_doanh_bat_dong_san_dich_vu?.name ?? "";
   const slug = generatePropertySlug(data.tieu_de, data.lark_record_id);
 
   const [imgError, setImgError] = useState(false);
@@ -65,7 +63,13 @@ function PropertyCardComponent({ data, layout = "grid" }: PropertyCardProps) {
   };
 
   const LocationIcon = ({ size = 12 }: { size?: number }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={COLORS.teal} style={{ flexShrink: 0 }}>
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill={COLORS.teal}
+      style={{ flexShrink: 0 }}
+    >
       <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
     </svg>
   );

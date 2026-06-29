@@ -160,7 +160,12 @@ export function DetailPage() {
           has3D ? (
             <div className="detail-media__360">
               <View360Icon />
-              <a href={property.link_3d!} target="_blank" rel="noopener noreferrer" className="detail-media__360-btn">
+              <a
+                href={property.link_3d!}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="detail-media__360-btn"
+              >
                 Mở liên kết 360 độ
               </a>
             </div>
@@ -170,7 +175,12 @@ export function DetailPage() {
         ) : activeMediaList.length > 0 ? (
           mediaTab === "video" && activeMediaList.length === 1 ? (
             <div className="detail-media__single">
-              <video src={activeMediaList[0].url} controls autoPlay className="detail-media__item" />
+              <video
+                src={activeMediaList[0].url}
+                controls
+                autoPlay
+                className="detail-media__item"
+              />
             </div>
           ) : (
             <GalleryMosaic
@@ -221,7 +231,13 @@ export function DetailPage() {
         <h1 className="detail-title">{property.tieu_de}</h1>
 
         <p className="detail-location">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill={COLORS.teal} style={{ flexShrink: 0 }}>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill={COLORS.teal}
+            style={{ flexShrink: 0 }}
+          >
             <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
           </svg>
           <span className="detail-location__text">{location}</span>
@@ -248,11 +264,7 @@ export function DetailPage() {
             label="Tiền cọc"
             value={property.gia_deal_lai ? formatLarkPrice(property.gia_deal_lai) : "Thỏa thuận"}
           />
-          <InfoGridItem
-            icon={<AreaIcon />}
-            label="Diện tích"
-            value={area ? `${area} m²` : "—"}
-          />
+          <InfoGridItem icon={<AreaIcon />} label="Diện tích" value={area ? `${area} m²` : "—"} />
           <InfoGridItem
             icon={<HomeWorkIcon />}
             label="Tình trạng"
@@ -261,12 +273,20 @@ export function DetailPage() {
           <InfoGridItem
             icon={<BoltIcon />}
             label="Tiền điện"
-            value={property.tien_dien_so ? `${property.tien_dien_so.toLocaleString("vi-VN")} đ/số` : "Thỏa thuận"}
+            value={
+              property.tien_dien_so
+                ? `${property.tien_dien_so.toLocaleString("vi-VN")} đ/số`
+                : "Thỏa thuận"
+            }
           />
           <InfoGridItem
             icon={<WaterIcon />}
             label="Tiền nước"
-            value={property.tien_nuoc_so ? `${property.tien_nuoc_so.toLocaleString("vi-VN")} đ/m³` : "Thỏa thuận"}
+            value={
+              property.tien_nuoc_so
+                ? `${property.tien_nuoc_so.toLocaleString("vi-VN")} đ/m³`
+                : "Thỏa thuận"
+            }
           />
           <InfoGridItem
             icon={<ExploreIcon />}
@@ -293,9 +313,21 @@ export function DetailPage() {
             <div className="detail-amenities-list">
               {currentAmenities.map((name, i) => (
                 <div key={i} className="detail-amenities-item">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, marginTop: 1 }}>
+                  <svg
+                    width="15"
+                    height="15"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    style={{ flexShrink: 0, marginTop: 1 }}
+                  >
                     <circle cx="12" cy="12" r="10" fill="#4ade80" />
-                    <path d="M8 12.5l2.5 2.5L16 9.5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    <path
+                      d="M8 12.5l2.5 2.5L16 9.5"
+                      stroke="#fff"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
                   </svg>
                   <span>{name}</span>
                 </div>
@@ -314,7 +346,6 @@ export function DetailPage() {
             <p className="detail-description">{property.ghi_chu_them}</p>
           </div>
         )}
-
 
         {/* Related */}
         {related.length > 0 && (
@@ -337,11 +368,7 @@ export function DetailPage() {
       {/* Sticky mobile contact bar */}
       <div className="detail-mobile-bar">
         <div className="detail-mobile-bar__avatar">
-          {agentAvatar ? (
-            <img src={agentAvatar} alt={agentName} />
-          ) : (
-            <span>{agentInitial}</span>
-          )}
+          {agentAvatar ? <img src={agentAvatar} alt={agentName} /> : <span>{agentInitial}</span>}
         </div>
         <div className="detail-mobile-bar__info">
           <span className="detail-mobile-bar__name">{agentName}</span>
@@ -349,7 +376,11 @@ export function DetailPage() {
         </div>
         <a href={`tel:${phone}`} className="detail-mobile-bar__btn detail-mobile-bar__btn--call">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-            <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.77 11a19.79 19.79 0 01-3.07-8.67A2 2 0 012.68 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.06 6.06l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z" stroke="white" strokeWidth="2"/>
+            <path
+              d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.77 11a19.79 19.79 0 01-3.07-8.67A2 2 0 012.68 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.06 6.06l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"
+              stroke="white"
+              strokeWidth="2"
+            />
           </svg>
           Gọi ngay
         </a>
@@ -434,7 +465,12 @@ function GalleryMosaic({
   if (count === 3) {
     return (
       <div className="gallery-mosaic gallery-mosaic--3">
-        <MosaicCell item={items[0]} title={title} onClick={() => onOpen(0)} className="gallery-mosaic__cell--main" />
+        <MosaicCell
+          item={items[0]}
+          title={title}
+          onClick={() => onOpen(0)}
+          className="gallery-mosaic__cell--main"
+        />
         {[1, 2].map((i) => (
           <MosaicCell key={i} item={items[i]} title={title} onClick={() => onOpen(i)} />
         ))}
@@ -455,7 +491,12 @@ function GalleryMosaic({
   const extra = count - 5;
   return (
     <div className="gallery-mosaic gallery-mosaic--5">
-      <MosaicCell item={items[0]} title={title} onClick={() => onOpen(0)} className="gallery-mosaic__cell--main" />
+      <MosaicCell
+        item={items[0]}
+        title={title}
+        onClick={() => onOpen(0)}
+        className="gallery-mosaic__cell--main"
+      />
       {[1, 2, 3, 4].map((i) => (
         <MosaicCell
           key={i}
@@ -466,7 +507,15 @@ function GalleryMosaic({
             i === 4 && extra > 0 ? (
               <div className="gallery-mosaic__more">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="white">
-                  <rect x="3" y="3" width="18" height="14" rx="2" stroke="white" strokeWidth="1.6" />
+                  <rect
+                    x="3"
+                    y="3"
+                    width="18"
+                    height="14"
+                    rx="2"
+                    stroke="white"
+                    strokeWidth="1.6"
+                  />
                   <circle cx="8" cy="8.5" r="1.3" fill="white" />
                   <path d="M3 15l5-4.5 4 3.5 3-2.5 6 4.5" stroke="white" strokeWidth="1.4" />
                 </svg>
@@ -511,12 +560,20 @@ function Lightbox({
           <path d="M18 6L6 18M6 6l12 12" stroke="white" strokeWidth="2" strokeLinecap="round" />
         </svg>
       </button>
-      <span className="lightbox__counter">{index + 1} / {items.length}</span>
+      <span className="lightbox__counter">
+        {index + 1} / {items.length}
+      </span>
 
       {items.length > 1 && (
         <button className="lightbox__nav lightbox__nav--prev" onClick={prev}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path d="M15 18l-6-6 6-6" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            <path
+              d="M15 18l-6-6 6-6"
+              stroke="white"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </button>
       )}
@@ -532,7 +589,13 @@ function Lightbox({
       {items.length > 1 && (
         <button className="lightbox__nav lightbox__nav--next" onClick={next}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-            <path d="M9 6l6 6-6 6" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            <path
+              d="M9 6l6 6-6 6"
+              stroke="white"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
         </button>
       )}
@@ -566,9 +629,30 @@ function MoneyIcon() {
   return (
     <svg {...infoIconProps}>
       <circle cx="12" cy="12" r="9" stroke={COLORS.primary} strokeWidth="1.6" />
-      <path d="M9.5 9.2a2 2 0 012-1.7h1a2 2 0 010 4h-1a2 2 0 000 4h1a2 2 0 002-1.7" stroke={COLORS.primary} strokeWidth="1.4" strokeLinecap="round" />
-      <line x1="12" y1="6.2" x2="12" y2="7.5" stroke={COLORS.primary} strokeWidth="1.4" strokeLinecap="round" />
-      <line x1="12" y1="16.5" x2="12" y2="17.8" stroke={COLORS.primary} strokeWidth="1.4" strokeLinecap="round" />
+      <path
+        d="M9.5 9.2a2 2 0 012-1.7h1a2 2 0 010 4h-1a2 2 0 000 4h1a2 2 0 002-1.7"
+        stroke={COLORS.primary}
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+      <line
+        x1="12"
+        y1="6.2"
+        x2="12"
+        y2="7.5"
+        stroke={COLORS.primary}
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+      <line
+        x1="12"
+        y1="16.5"
+        x2="12"
+        y2="17.8"
+        stroke={COLORS.primary}
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -576,7 +660,15 @@ function MoneyIcon() {
 function AreaIcon() {
   return (
     <svg {...infoIconProps}>
-      <rect x="3.5" y="3.5" width="17" height="17" rx="1.5" stroke={COLORS.primary} strokeWidth="1.6" />
+      <rect
+        x="3.5"
+        y="3.5"
+        width="17"
+        height="17"
+        rx="1.5"
+        stroke={COLORS.primary}
+        strokeWidth="1.6"
+      />
       <path d="M3.5 20L20 3.5" stroke={COLORS.primary} strokeWidth="1.2" strokeDasharray="2 2.5" />
     </svg>
   );
@@ -585,7 +677,12 @@ function AreaIcon() {
 function HomeWorkIcon() {
   return (
     <svg {...infoIconProps}>
-      <path d="M3 21V10l6-4 6 4v11" stroke={COLORS.primary} strokeWidth="1.6" strokeLinejoin="round" />
+      <path
+        d="M3 21V10l6-4 6 4v11"
+        stroke={COLORS.primary}
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
       <path d="M15 21V7l6 3v11" stroke={COLORS.primary} strokeWidth="1.6" strokeLinejoin="round" />
       <line x1="3" y1="21" x2="21" y2="21" stroke={COLORS.primary} strokeWidth="1.6" />
     </svg>
@@ -595,7 +692,12 @@ function HomeWorkIcon() {
 function BoltIcon() {
   return (
     <svg {...infoIconProps}>
-      <path d="M13 2L4 14h6l-1 8 9-12h-6l1-8z" stroke={COLORS.primary} strokeWidth="1.5" strokeLinejoin="round" />
+      <path
+        d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"
+        stroke={COLORS.primary}
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -603,7 +705,12 @@ function BoltIcon() {
 function WaterIcon() {
   return (
     <svg {...infoIconProps}>
-      <path d="M12 3c3 4 6 7.5 6 11a6 6 0 01-12 0c0-3.5 3-7 6-11z" stroke={COLORS.primary} strokeWidth="1.6" strokeLinejoin="round" />
+      <path
+        d="M12 3c3 4 6 7.5 6 11a6 6 0 01-12 0c0-3.5 3-7 6-11z"
+        stroke={COLORS.primary}
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -612,7 +719,12 @@ function ExploreIcon() {
   return (
     <svg {...infoIconProps}>
       <circle cx="12" cy="12" r="9" stroke={COLORS.primary} strokeWidth="1.6" />
-      <path d="M15 9l-2 5-5 2 2-5 5-2z" stroke={COLORS.primary} strokeWidth="1.4" strokeLinejoin="round" />
+      <path
+        d="M15 9l-2 5-5 2 2-5 5-2z"
+        stroke={COLORS.primary}
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }
@@ -631,11 +743,7 @@ function fmtDist(m: number): string {
   return m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1)} km`;
 }
 
-function NearbyPlacesSection({
-  cachedPlaces,
-}: {
-  cachedPlaces: ILarkProperty["nearby_places"];
-}) {
+function NearbyPlacesSection({ cachedPlaces }: { cachedPlaces: ILarkProperty["nearby_places"] }) {
   const [tab, setTab] = useState(0);
 
   if (!cachedPlaces) return null;
@@ -690,9 +798,22 @@ function NearbyPlacesSection({
 function SchoolIcon({ size = 16, color = "#000" }: { size?: number; color?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <path d="M12 3l9 4.5-9 4.5-9-4.5L12 3z" stroke={color} strokeWidth="1.6" strokeLinejoin="round" />
+      <path
+        d="M12 3l9 4.5-9 4.5-9-4.5L12 3z"
+        stroke={color}
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
       <path d="M6 10v5c0 1.5 2.5 3 6 3s6-1.5 6-3v-5" stroke={color} strokeWidth="1.6" />
-      <line x1="21" y1="7.5" x2="21" y2="14" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+      <line
+        x1="21"
+        y1="7.5"
+        x2="21"
+        y2="14"
+        stroke={color}
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -709,7 +830,13 @@ function HospitalIcon({ size = 16, color = "#000" }: { size?: number; color?: st
 function CartIcon({ size = 16, color = "#000" }: { size?: number; color?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <path d="M3 4h2l2.4 12.4a1.5 1.5 0 001.5 1.2h8.2a1.5 1.5 0 001.5-1.2L20 8H6" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M3 4h2l2.4 12.4a1.5 1.5 0 001.5 1.2h8.2a1.5 1.5 0 001.5-1.2L20 8H6"
+        stroke={color}
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
       <circle cx="9.5" cy="20" r="1.3" fill={color} />
       <circle cx="17" cy="20" r="1.3" fill={color} />
     </svg>
@@ -719,8 +846,21 @@ function CartIcon({ size = 16, color = "#000" }: { size?: number; color?: string
 function ParkIcon({ size = 16, color = "#000" }: { size?: number; color?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <path d="M12 2l4 6h-2.5l3.5 5h-3l3 5H7l3-5h-3l3.5-5H8l4-6z" stroke={color} strokeWidth="1.4" strokeLinejoin="round" />
-      <line x1="12" y1="18" x2="12" y2="22" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+      <path
+        d="M12 2l4 6h-2.5l3.5 5h-3l3 5H7l3-5h-3l3.5-5H8l4-6z"
+        stroke={color}
+        strokeWidth="1.4"
+        strokeLinejoin="round"
+      />
+      <line
+        x1="12"
+        y1="18"
+        x2="12"
+        y2="22"
+        stroke={color}
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
     </svg>
   );
 }
@@ -729,7 +869,13 @@ function WalkIcon({ size = 12, color = "#9ca3af" }: { size?: number; color?: str
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
       <circle cx="13" cy="4" r="1.8" fill={color} />
-      <path d="M10 22l1.5-6-2-1.5.5-5 3-2 3 2.5 2.5 1.5M9.5 15l-3 2M14 14.5l2.5 1.5.5 4" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path
+        d="M10 22l1.5-6-2-1.5.5-5 3-2 3 2.5 2.5 1.5M9.5 15l-3 2M14 14.5l2.5 1.5.5 4"
+        stroke={color}
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }

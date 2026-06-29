@@ -14,9 +14,7 @@ body {
 }
 
 body {
-  font-family:
-    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
-    sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
   background: #fff;
   color: #111;
   line-height: 1.5;
@@ -194,12 +192,7 @@ a {
   position: absolute;
   inset: 0;
   width: 35%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.03),
-    transparent
-  );
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.03), transparent);
   animation: splash-sweep 3.5s ease-in-out 0.8s infinite;
   pointer-events: none;
 }

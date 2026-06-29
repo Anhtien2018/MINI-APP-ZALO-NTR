@@ -116,11 +116,25 @@ export interface ILarkProperty {
   tinh_thanh_pho_tw_duoc_phan_cong: ILarkStatusOption | null;
   phuong: ILarkPhuong | null;
   quan: Array<{ id: number; lark_properties_id: string; lark_quan_id: ILarkDistrict }>;
-  nearby_places: Record<string, Array<{ place_id: string; name: string; formatted_address?: string; lat: number; lng: number; distanceMeters: number }>> | null;
+  nearby_places: Record<
+    string,
+    Array<{
+      place_id: string;
+      name: string;
+      formatted_address?: string;
+      lat: number;
+      lng: number;
+      distanceMeters: number;
+    }>
+  > | null;
   do_thiet_bi_ban_giao: Array<{ lark_do_thiet_bi_ban_giao_id: ILarkStatusOption }>;
   tien_ich_ben_ngoai_cua_san_pham: Array<{ lark_tien_ich_ben_ngoai_cua__id: ILarkStatusOption }>;
-  tien_ich_phong_ngu_phong_chuc_nang_khac: Array<{ lark_tien_ich_phong_ngu_phon_id: ILarkStatusOption }>;
-  tien_ich_khac_tien_ich_chung_cu_neu_co: Array<{ lark_tien_ich_khac_tien_ich__id: ILarkStatusOption }>;
+  tien_ich_phong_ngu_phong_chuc_nang_khac: Array<{
+    lark_tien_ich_phong_ngu_phon_id: ILarkStatusOption;
+  }>;
+  tien_ich_khac_tien_ich_chung_cu_neu_co: Array<{
+    lark_tien_ich_khac_tien_ich__id: ILarkStatusOption;
+  }>;
 }
 
 export interface IPropertiesResponse {

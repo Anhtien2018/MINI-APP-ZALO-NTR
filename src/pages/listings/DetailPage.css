@@ -359,7 +359,7 @@
   border-right: none;
 }
 
-.detail-info-grid__item:nth-last-child(-n+2) {
+.detail-info-grid__item:nth-last-child(-n + 2) {
   border-bottom: none;
 }
 
@@ -700,9 +700,15 @@
   border-radius: 6px;
 }
 
-.skeleton-line { height: 12px; }
+.skeleton-line {
+  height: 12px;
+}
 
 @keyframes skeleton-anim {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }

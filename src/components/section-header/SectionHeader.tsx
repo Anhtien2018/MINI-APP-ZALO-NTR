@@ -36,10 +36,7 @@ export function SectionHeader({
         </h2>
       </div>
       {viewAllLink && (
-        <button
-          className="section-header__view-all"
-          onClick={() => navigate(viewAllLink)}
-        >
+        <button className="section-header__view-all" onClick={() => navigate(viewAllLink)}>
           {viewAllLabel} &rarr;
         </button>
       )}

@@ -25,18 +25,19 @@ import { useEffect } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import "./app.css";
 
-const SPLASH_PARTICLES: { size: number; top: string; left: string; delay: number; dur: number }[] = [
-  { size: 5, top: "12%", left: "10%", delay: 0, dur: 4.2 },
-  { size: 4, top: "18%", left: "82%", delay: 0.6, dur: 5 },
-  { size: 7, top: "72%", left: "7%", delay: 1.1, dur: 3.8 },
-  { size: 4, top: "78%", left: "88%", delay: 0.3, dur: 4.6 },
-  { size: 3, top: "45%", left: "4%", delay: 0.9, dur: 4 },
-  { size: 5, top: "38%", left: "93%", delay: 1.4, dur: 5.2 },
-  { size: 6, top: "88%", left: "52%", delay: 0.5, dur: 3.6 },
-  { size: 3, top: "8%", left: "48%", delay: 1.7, dur: 4.4 },
-  { size: 4, top: "60%", left: "20%", delay: 0.2, dur: 4.8 },
-  { size: 3, top: "25%", left: "65%", delay: 1.3, dur: 3.9 },
-];
+const SPLASH_PARTICLES: { size: number; top: string; left: string; delay: number; dur: number }[] =
+  [
+    { size: 5, top: "12%", left: "10%", delay: 0, dur: 4.2 },
+    { size: 4, top: "18%", left: "82%", delay: 0.6, dur: 5 },
+    { size: 7, top: "72%", left: "7%", delay: 1.1, dur: 3.8 },
+    { size: 4, top: "78%", left: "88%", delay: 0.3, dur: 4.6 },
+    { size: 3, top: "45%", left: "4%", delay: 0.9, dur: 4 },
+    { size: 5, top: "38%", left: "93%", delay: 1.4, dur: 5.2 },
+    { size: 6, top: "88%", left: "52%", delay: 0.5, dur: 3.6 },
+    { size: 3, top: "8%", left: "48%", delay: 1.7, dur: 4.4 },
+    { size: 4, top: "60%", left: "20%", delay: 0.2, dur: 4.8 },
+    { size: 3, top: "25%", left: "65%", delay: 1.3, dur: 3.9 },
+  ];
 
 function SplashScreen() {
   const {

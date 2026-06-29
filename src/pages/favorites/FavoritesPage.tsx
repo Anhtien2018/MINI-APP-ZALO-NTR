@@ -18,11 +18,7 @@ export function FavoritesPage() {
       return;
     }
     setLoading(true);
-    Promise.all(
-      favorites.map((f) =>
-        getLarkPropertyByRecordId(f.propertyId).catch(() => null),
-      ),
-    )
+    Promise.all(favorites.map((f) => getLarkPropertyByRecordId(f.propertyId).catch(() => null)))
       .then((results) => setProperties(results.filter(Boolean) as ILarkProperty[]))
       .finally(() => setLoading(false));
   }, [favorites]);
@@ -65,10 +61,7 @@ function EmptyFavorites() {
       </svg>
       <p className="favorites-empty__text">Chưa có bất động sản yêu thích</p>
       <p className="favorites-empty__sub">Nhấn vào biểu tượng tim để lưu BĐS bạn quan tâm</p>
-      <button
-        className="favorites-empty__btn"
-        onClick={() => navigate("/listings")}
-      >
+      <button className="favorites-empty__btn" onClick={() => navigate("/listings")}>
         Khám phá ngay
       </button>
     </div>

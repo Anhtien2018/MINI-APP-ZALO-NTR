@@ -104,9 +104,33 @@ export function SearchPage() {
       <div className="listings-toolbar">
         <button className="listings-toolbar__filter-btn" onClick={() => setFilterOpen(true)}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <line x1="4" y1="6" x2="20" y2="6" stroke="#111" strokeWidth="1.8" strokeLinecap="round" />
-            <line x1="4" y1="12" x2="20" y2="12" stroke="#111" strokeWidth="1.8" strokeLinecap="round" />
-            <line x1="4" y1="18" x2="20" y2="18" stroke="#111" strokeWidth="1.8" strokeLinecap="round" />
+            <line
+              x1="4"
+              y1="6"
+              x2="20"
+              y2="6"
+              stroke="#111"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+            <line
+              x1="4"
+              y1="12"
+              x2="20"
+              y2="12"
+              stroke="#111"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+            <line
+              x1="4"
+              y1="18"
+              x2="20"
+              y2="18"
+              stroke="#111"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
             <circle cx="9" cy="6" r="2" fill="#fff" stroke="#111" strokeWidth="1.8" />
             <circle cx="16" cy="12" r="2" fill="#fff" stroke="#111" strokeWidth="1.8" />
             <circle cx="11" cy="18" r="2" fill="#fff" stroke="#111" strokeWidth="1.8" />
@@ -137,14 +161,8 @@ export function SearchPage() {
             <div key={i} className="property-skeleton">
               <div className="property-skeleton__img skeleton-pulse" />
               <div className="property-skeleton__body">
-                <div
-                  className="skeleton-pulse skeleton-line"
-                  style={{ width: "90%" }}
-                />
-                <div
-                  className="skeleton-pulse skeleton-line"
-                  style={{ width: "60%" }}
-                />
+                <div className="skeleton-pulse skeleton-line" style={{ width: "90%" }} />
+                <div className="skeleton-pulse skeleton-line" style={{ width: "60%" }} />
               </div>
             </div>
           ))}
@@ -161,17 +179,10 @@ export function SearchPage() {
         <div className="listings-empty">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
             <circle cx="11" cy="11" r="8" stroke="#ccc" strokeWidth="1.5" />
-            <path
-              d="M21 21l-4.35-4.35"
-              stroke="#ccc"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
+            <path d="M21 21l-4.35-4.35" stroke="#ccc" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
           <p>Không tìm thấy bất động sản</p>
-          <button onClick={() => useListingsStore.getState().resetFilter()}>
-            Xóa bộ lọc
-          </button>
+          <button onClick={() => useListingsStore.getState().resetFilter()}>Xóa bộ lọc</button>
         </div>
       )}
     </PageLayout>

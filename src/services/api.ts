@@ -146,7 +146,8 @@ export async function getLarkPropertiesPaginated(
     `&meta=filter_count`;
 
   if (status) url += `&filter[trang_thai][_eq]=${encodeURIComponent(status)}`;
-  if (transactionType) url += `&filter[loai_hinh_kinh_doanh_bat_dong_san_dich_vu][_eq]=${encodeURIComponent(transactionType)}`;
+  if (transactionType)
+    url += `&filter[loai_hinh_kinh_doanh_bat_dong_san_dich_vu][_eq]=${encodeURIComponent(transactionType)}`;
   if (propertyType) url += `&filter[danh_muc_bds][_eq]=${encodeURIComponent(propertyType)}`;
   if (city) url += `&filter[tinh_thanh_pho_tw_duoc_phan_cong][id][_eq]=${encodeURIComponent(city)}`;
   if (district) url += `&filter[quan][lark_quan_id][id][_eq]=${encodeURIComponent(district)}`;

@@ -14,11 +14,20 @@ const PRICE_MAX = 50;
 const AREA_MAX = 500;
 
 function DualRangeSlider({
-  min, max, step, valueMin, valueMax, unit,
+  min,
+  max,
+  step,
+  valueMin,
+  valueMax,
+  unit,
   onChange,
 }: {
-  min: number; max: number; step: number;
-  valueMin: number; valueMax: number; unit: string;
+  min: number;
+  max: number;
+  step: number;
+  valueMin: number;
+  valueMax: number;
+  unit: string;
   onChange: (min: number, max: number) => void;
 }) {
   const rangeRef = useRef<HTMLDivElement>(null);
@@ -32,9 +41,7 @@ function DualRangeSlider({
   };
 
   const formatVal = (v: number) =>
-    unit === "tỷ"
-      ? v === 0 ? "0" : `${v} tỷ`
-      : v === 0 ? "0 m²" : `${v} m²`;
+    unit === "tỷ" ? (v === 0 ? "0" : `${v} tỷ`) : v === 0 ? "0 m²" : `${v} m²`;
 
   return (
     <div className="dual-slider">
@@ -45,7 +52,10 @@ function DualRangeSlider({
       <div className="dual-slider__track-wrap" ref={rangeRef}>
         <div className="dual-slider__track" style={trackStyle} />
         <input
-          type="range" min={min} max={max} step={step}
+          type="range"
+          min={min}
+          max={max}
+          step={step}
           value={valueMin}
           className="dual-slider__input dual-slider__input--min"
           onChange={(e) => {
@@ -54,7 +64,10 @@ function DualRangeSlider({
           }}
         />
         <input
-          type="range" min={min} max={max} step={step}
+          type="range"
+          min={min}
+          max={max}
+          step={step}
           value={valueMax}
           className="dual-slider__input dual-slider__input--max"
           onChange={(e) => {
@@ -95,8 +108,10 @@ export function FilterModal({ open, onClose }: FilterModalProps) {
     if (open) {
       setDraft({ ...globalFilter });
       setBedrooms([]);
-      setPriceMin(0); setPriceMax(PRICE_MAX);
-      setAreaMin(0); setAreaMax(AREA_MAX);
+      setPriceMin(0);
+      setPriceMax(PRICE_MAX);
+      setAreaMin(0);
+      setAreaMax(AREA_MAX);
     }
     // Only re-sync when the modal transitions open — re-running this on every
     // globalFilter change (e.g. the live debounced search below) would wipe
@@ -110,20 +125,16 @@ export function FilterModal({ open, onClose }: FilterModalProps) {
     } else {
       document.body.style.overflow = "";
     }
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [open]);
 
   if (!open) return null;
 
-  const districtOptions = draft.city
-    ? districts.filter((d) => d.province_id === draft.city)
-    : [];
+  const districtOptions = draft.city ? districts.filter((d) => d.province_id === draft.city) : [];
 
-  const allAmenities = [
-    ...otherApartmentAmenities,
-    ...externalAmenities,
-    ...bedroomAmenities,
-  ];
+  const allAmenities = [...otherApartmentAmenities, ...externalAmenities, ...bedroomAmenities];
   const visibleAmenities = amenitiesExpanded ? allAmenities : allAmenities.slice(0, 8);
 
   const toggleFeature = (id: string) => {
@@ -141,8 +152,10 @@ export function FilterModal({ open, onClose }: FilterModalProps) {
   const handleReset = () => {
     setDraft({ ...EMPTY_FILTER });
     setBedrooms([]);
-    setPriceMin(0); setPriceMax(PRICE_MAX);
-    setAreaMin(0); setAreaMax(AREA_MAX);
+    setPriceMin(0);
+    setPriceMax(PRICE_MAX);
+    setAreaMin(0);
+    setAreaMax(AREA_MAX);
   };
 
   const handleSearch = () => {
@@ -197,15 +210,27 @@ export function FilterModal({ open, onClose }: FilterModalProps) {
                 <select
                   className="filter-select filter-select--capitalize"
                   value={draft.transactionType}
-                  onChange={(e) => setDraft({ ...draft, transactionType: e.target.value, propertyType: "" })}
+                  onChange={(e) =>
+                    setDraft({ ...draft, transactionType: e.target.value, propertyType: "" })
+                  }
                 >
                   <option value="">Giao dịch</option>
                   {businessTypes.map((t) => {
                     const s = t.name.toLowerCase();
-                    return <option key={t.id} value={t.id}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>;
+                    return (
+                      <option key={t.id} value={t.id}>
+                        {s.charAt(0).toUpperCase() + s.slice(1)}
+                      </option>
+                    );
                   })}
                 </select>
-                <svg className="filter-select__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <svg
+                  className="filter-select__arrow"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
                   <path d="M6 9l6 6 6-6" stroke="#999" strokeWidth="2" strokeLinecap="round" />
                 </svg>
               </div>
@@ -220,10 +245,18 @@ export function FilterModal({ open, onClose }: FilterModalProps) {
                 >
                   <option value="">Tài sản</option>
                   {propertyCategories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
                   ))}
                 </select>
-                <svg className="filter-select__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <svg
+                  className="filter-select__arrow"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
                   <path d="M6 9l6 6 6-6" stroke="#999" strokeWidth="2" strokeLinecap="round" />
                 </svg>
               </div>
@@ -242,17 +275,27 @@ export function FilterModal({ open, onClose }: FilterModalProps) {
                 >
                   <option value="">Tỉnh/Thành</option>
                   {cities.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
                   ))}
                 </select>
-                <svg className="filter-select__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <svg
+                  className="filter-select__arrow"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
                   <path d="M6 9l6 6 6-6" stroke="#999" strokeWidth="2" strokeLinecap="round" />
                 </svg>
               </div>
             </div>
             <div className="filter-field">
               <label className="filter-label">Xã/Phường</label>
-              <div className={`filter-select-wrap${!draft.city ? " filter-select-wrap--disabled" : ""}`}>
+              <div
+                className={`filter-select-wrap${!draft.city ? " filter-select-wrap--disabled" : ""}`}
+              >
                 <select
                   className={`filter-select${!draft.district ? " filter-select--placeholder" : ""}`}
                   value={draft.district}
@@ -261,10 +304,18 @@ export function FilterModal({ open, onClose }: FilterModalProps) {
                 >
                   <option value="">Xã/Phường</option>
                   {districtOptions.map((d) => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                    </option>
                   ))}
                 </select>
-                <svg className="filter-select__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <svg
+                  className="filter-select__arrow"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
                   <path d="M6 9l6 6 6-6" stroke="#999" strokeWidth="2" strokeLinecap="round" />
                 </svg>
               </div>
@@ -275,9 +326,16 @@ export function FilterModal({ open, onClose }: FilterModalProps) {
           <div className="filter-field">
             <span className="filter-label">Khoảng giá</span>
             <DualRangeSlider
-              min={0} max={PRICE_MAX} step={1}
-              valueMin={priceMin} valueMax={priceMax} unit="tỷ"
-              onChange={(mn, mx) => { setPriceMin(mn); setPriceMax(mx); }}
+              min={0}
+              max={PRICE_MAX}
+              step={1}
+              valueMin={priceMin}
+              valueMax={priceMax}
+              unit="tỷ"
+              onChange={(mn, mx) => {
+                setPriceMin(mn);
+                setPriceMax(mx);
+              }}
             />
           </div>
 
@@ -285,9 +343,16 @@ export function FilterModal({ open, onClose }: FilterModalProps) {
           <div className="filter-field">
             <span className="filter-label">Diện tích</span>
             <DualRangeSlider
-              min={0} max={AREA_MAX} step={10}
-              valueMin={areaMin} valueMax={areaMax} unit="m²"
-              onChange={(mn, mx) => { setAreaMin(mn); setAreaMax(mx); }}
+              min={0}
+              max={AREA_MAX}
+              step={10}
+              valueMin={areaMin}
+              valueMax={areaMax}
+              unit="m²"
+              onChange={(mn, mx) => {
+                setAreaMin(mn);
+                setAreaMax(mx);
+              }}
             />
           </div>
 
@@ -299,10 +364,18 @@ export function FilterModal({ open, onClose }: FilterModalProps) {
                 <select className="filter-select filter-select--placeholder" defaultValue="">
                   <option value="">Chọn hướng</option>
                   {mainDirections.map((d) => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                    </option>
                   ))}
                 </select>
-                <svg className="filter-select__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <svg
+                  className="filter-select__arrow"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
                   <path d="M6 9l6 6 6-6" stroke="#999" strokeWidth="2" strokeLinecap="round" />
                 </svg>
               </div>
@@ -336,21 +409,44 @@ export function FilterModal({ open, onClose }: FilterModalProps) {
                 >
                   {amenitiesExpanded ? "Thu gọn" : "Xem thêm"}
                   <svg
-                    width="14" height="14" viewBox="0 0 24 24" fill="none"
-                    style={{ transform: amenitiesExpanded ? "rotate(-90deg)" : "rotate(90deg)", transition: "transform 0.2s" }}
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    style={{
+                      transform: amenitiesExpanded ? "rotate(-90deg)" : "rotate(90deg)",
+                      transition: "transform 0.2s",
+                    }}
                   >
-                    <path d="M9 18l6-6-6-6" stroke="#ff6b35" strokeWidth="2" strokeLinecap="round" />
+                    <path
+                      d="M9 18l6-6-6-6"
+                      stroke="#ff6b35"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
                   </svg>
                 </button>
               </div>
               {amenitiesExpanded && (
                 <div className="filter-amenities-list">
                   {allAmenities.map((a) => (
-                    <label key={a.id} className="filter-checkbox-row" onClick={() => toggleFeature(a.id)}>
-                      <div className={`filter-checkbox${(draft.features ?? []).includes(a.id) ? " filter-checkbox--checked" : ""}`}>
+                    <label
+                      key={a.id}
+                      className="filter-checkbox-row"
+                      onClick={() => toggleFeature(a.id)}
+                    >
+                      <div
+                        className={`filter-checkbox${(draft.features ?? []).includes(a.id) ? " filter-checkbox--checked" : ""}`}
+                      >
                         {(draft.features ?? []).includes(a.id) && (
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                            <path d="M5 13l4 4L19 7" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                            <path
+                              d="M5 13l4 4L19 7"
+                              stroke="#fff"
+                              strokeWidth="2.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
                           </svg>
                         )}
                       </div>

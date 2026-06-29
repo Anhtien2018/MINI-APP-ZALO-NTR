@@ -11,8 +11,20 @@ function MapFilterSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
     <div className="map-search__select-wrap">
       <select className="map-search__select" {...props} />
-      <svg className="map-search__select-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none">
-        <path d="M6 9l6 6 6-6" stroke="#999" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <svg
+        className="map-search__select-arrow"
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+      >
+        <path
+          d="M6 9l6 6 6-6"
+          stroke="#999"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
       </svg>
     </div>
   );
@@ -100,9 +112,33 @@ export function MapPage() {
               onClick={() => setFiltersOpen((v) => !v)}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <line x1="4" y1="6" x2="20" y2="6" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" />
-                <line x1="4" y1="12" x2="20" y2="12" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" />
-                <line x1="4" y1="18" x2="20" y2="18" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" />
+                <line
+                  x1="4"
+                  y1="6"
+                  x2="20"
+                  y2="6"
+                  stroke="#fff"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                />
+                <line
+                  x1="4"
+                  y1="12"
+                  x2="20"
+                  y2="12"
+                  stroke="#fff"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                />
+                <line
+                  x1="4"
+                  y1="18"
+                  x2="20"
+                  y2="18"
+                  stroke="#fff"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                />
                 <circle cx="9" cy="6" r="2" fill="#2563eb" stroke="#fff" strokeWidth="1.8" />
                 <circle cx="16" cy="12" r="2" fill="#2563eb" stroke="#fff" strokeWidth="1.8" />
                 <circle cx="11" cy="18" r="2" fill="#2563eb" stroke="#fff" strokeWidth="1.8" />
@@ -119,7 +155,9 @@ export function MapPage() {
                 >
                   <option value="">Tỉnh/ Thành phố</option>
                   {cities.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
                   ))}
                 </MapFilterSelect>
 
@@ -130,7 +168,9 @@ export function MapPage() {
                 >
                   <option value="">{filter.city ? "Quận/ Huyện" : "Chọn tỉnh trước"}</option>
                   {districtOptions.map((d) => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
+                    <option key={d.id} value={d.id}>
+                      {d.name}
+                    </option>
                   ))}
                 </MapFilterSelect>
               </div>
@@ -142,7 +182,9 @@ export function MapPage() {
                 >
                   <option value="">Loại giao dịch</option>
                   {businessTypes.map((t) => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
                   ))}
                 </MapFilterSelect>
 
@@ -152,7 +194,9 @@ export function MapPage() {
                 >
                   <option value="">Loại BĐS</option>
                   {propertyCategories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
                   ))}
                 </MapFilterSelect>
               </div>
@@ -160,9 +204,33 @@ export function MapPage() {
               <div className="map-search__row map-search__row--bottom">
                 <button className="map-search__advanced-btn" onClick={() => setAdvancedOpen(true)}>
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
-                    <line x1="4" y1="6" x2="20" y2="6" stroke="#555" strokeWidth="1.8" strokeLinecap="round" />
-                    <line x1="4" y1="12" x2="20" y2="12" stroke="#555" strokeWidth="1.8" strokeLinecap="round" />
-                    <line x1="4" y1="18" x2="20" y2="18" stroke="#555" strokeWidth="1.8" strokeLinecap="round" />
+                    <line
+                      x1="4"
+                      y1="6"
+                      x2="20"
+                      y2="6"
+                      stroke="#555"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                    />
+                    <line
+                      x1="4"
+                      y1="12"
+                      x2="20"
+                      y2="12"
+                      stroke="#555"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                    />
+                    <line
+                      x1="4"
+                      y1="18"
+                      x2="20"
+                      y2="18"
+                      stroke="#555"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                    />
                     <circle cx="9" cy="6" r="2" fill="#fff" stroke="#555" strokeWidth="1.8" />
                     <circle cx="16" cy="12" r="2" fill="#fff" stroke="#555" strokeWidth="1.8" />
                     <circle cx="11" cy="18" r="2" fill="#fff" stroke="#555" strokeWidth="1.8" />
