@@ -1,0 +1,145 @@
+.map-page {
+  position: relative;
+  height: 100%;
+}
+
+.map-search {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+}
+
+.map-search__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.map-search__row--bottom {
+  justify-content: space-between;
+}
+
+.map-search__input-wrap {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  min-width: 0;
+}
+
+.map-search__input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: none;
+  font-size: 13px;
+  color: #111;
+  font-family: inherit;
+}
+
+.map-search__input::placeholder {
+  color: #aaa;
+}
+
+.map-search__tune-btn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 10px;
+  background: #2563eb;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.map-search__tune-btn--active {
+  background: #1d4ed8;
+}
+
+.map-search__select-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+}
+
+.map-search__select {
+  width: 100%;
+  padding: 10px 30px 10px 12px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  font-size: 13px;
+  color: #111;
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.map-search__select:focus {
+  border-color: #228b22;
+}
+
+.map-search__select:disabled {
+  opacity: 0.5;
+  color: #bbb;
+}
+
+.map-search__select-arrow {
+  position: absolute;
+  right: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.map-search__advanced-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 4px 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #555;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.map-search__clear-btn {
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: #e53935;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.map-page__map {
+  position: absolute;
+  inset: 0;
+  background: #e8f5e9;
+}

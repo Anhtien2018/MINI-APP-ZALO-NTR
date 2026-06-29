@@ -1,0 +1,12 @@
+{
+  "app": {
+    "title": "Nguyễn Thịnh Real",
+    "icon": "https://cms.nguyenthinhreal.org/assets/logo.png",
+    "coverImage": "https://cms.nguyenthinhreal.org/assets/banner.jpg"
+  },
+  "miniApp": {
+    "defaultLocale": "vi",
+    "navigationType": "stack"
+  },
+  "template": "classic"
+}

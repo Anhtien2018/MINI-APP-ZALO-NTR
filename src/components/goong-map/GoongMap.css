@@ -1,0 +1,53 @@
+.goong-map {
+  width: 100%;
+  height: 100%;
+}
+
+.goong-map__fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-size: 12px;
+  text-align: center;
+  padding: 0 16px;
+}
+
+.goong-popup {
+  cursor: pointer;
+  width: 200px;
+}
+
+.goong-popup__img {
+  width: 100%;
+  height: 100px;
+  object-fit: cover;
+  display: block;
+  border-radius: 6px 6px 0 0;
+}
+
+.goong-popup__body {
+  padding: 8px 4px 2px;
+}
+
+.goong-popup__title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #111;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0 0 4px;
+}
+
+.goong-popup__price {
+  font-size: 12px;
+  font-weight: 700;
+  color: #16a34a;
+  margin: 0;
+}
