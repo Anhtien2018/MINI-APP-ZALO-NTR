@@ -101,6 +101,11 @@ interface ListingsState {
   setFilter: (f: Partial<ListingsFilter>) => void;
   setSearch: (value: string) => void;
   resetFilter: () => void;
+  // Whether the quick-filter dropdown row (under QuickFilterBar) is expanded.
+  // Lives here (not component-local state) so QuickFilterBar can be dropped
+  // into any page without prop-drilling the open/closed state.
+  filtersOpen: boolean;
+  toggleFiltersOpen: () => void;
 }
 
 export const EMPTY_FILTER: ListingsFilter = {
@@ -130,6 +135,58 @@ export const useListingsStore = create<ListingsState>((set) => ({
     if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
     set({ filter: { ...EMPTY_FILTER } });
   },
+  filtersOpen: false,
+  toggleFiltersOpen: () => set((s) => ({ filtersOpen: !s.filtersOpen })),
+}));
+
+interface MapState {
+  properties: ILarkProperty[];
+  loaded: boolean;
+  cacheKey: string | null;
+  setProperties: (items: ILarkProperty[], cacheKey: string) => void;
+  // UI state that should survive navigating away from the map page and back
+  // (e.g. clicking a marker's popup, then hitting back).
+  selectedMarkerId: string | null;
+  setSelectedMarkerId: (id: string | null) => void;
+  mapCenter: [number, number] | null;
+  mapZoom: number | null;
+  setMapView: (center: [number, number], zoom: number) => void;
+}
+
+export const useMapStore = create<MapState>((set) => ({
+  properties: [],
+  loaded: false,
+  cacheKey: null,
+  setProperties: (items, cacheKey) => set({ properties: items, loaded: true, cacheKey }),
+  selectedMarkerId: null,
+  setSelectedMarkerId: (id) => set({ selectedMarkerId: id }),
+  mapCenter: null,
+  mapZoom: null,
+  setMapView: (mapCenter, mapZoom) => set({ mapCenter, mapZoom }),
+}));
+
+interface SearchResultsState {
+  properties: ILarkProperty[];
+  total: number;
+  page: number;
+  hasMore: boolean;
+  cacheKey: string | null;
+  // UI state that should survive navigating away from the search results
+  // (e.g. opening a property's detail page) and back (e.g. hitting back).
+  setResults: (items: ILarkProperty[], total: number, hasMore: boolean, cacheKey: string) => void;
+  appendResults: (items: ILarkProperty[], page: number, hasMore: boolean) => void;
+}
+
+export const useSearchResultsStore = create<SearchResultsState>((set) => ({
+  properties: [],
+  total: 0,
+  page: 1,
+  hasMore: true,
+  cacheKey: null,
+  setResults: (items, total, hasMore, cacheKey) =>
+    set({ properties: items, total, page: 1, hasMore, cacheKey }),
+  appendResults: (items, page, hasMore) =>
+    set((s) => ({ properties: [...s.properties, ...items], page, hasMore })),
 }));
 
 interface FavoritesState {

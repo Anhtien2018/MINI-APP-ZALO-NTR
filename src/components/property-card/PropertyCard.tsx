@@ -17,7 +17,10 @@ interface PropertyCardProps {
   layout?: "grid" | "list";
 }
 
-function PropertyCardComponent({ data, layout = "grid" }: PropertyCardProps) {
+function PropertyCardComponent(
+  { data, layout = "grid" }: PropertyCardProps,
+  ref: React.Ref<HTMLDivElement>,
+) {
   const navigate = useNavigate();
   const webConfig = useAppStore((s) => s.webConfig);
   const isFav = useFavoritesStore((s) => s.isFavorite(data.id));
@@ -99,7 +102,7 @@ function PropertyCardComponent({ data, layout = "grid" }: PropertyCardProps) {
 
   if (layout === "list") {
     return (
-      <div className="property-card property-card--list" onClick={handleCardClick}>
+      <div className="property-card property-card--list" onClick={handleCardClick} ref={ref}>
         <div className="property-card__img-wrap property-card__img-wrap--list">
           {image && !imgError ? (
             <img
@@ -127,7 +130,7 @@ function PropertyCardComponent({ data, layout = "grid" }: PropertyCardProps) {
   }
 
   return (
-    <div className="property-card" onClick={handleCardClick}>
+    <div className="property-card" onClick={handleCardClick} ref={ref}>
       <div className="property-card__img-wrap">
         {image && !imgError ? (
           <img
@@ -174,4 +177,4 @@ function PropertyCardComponent({ data, layout = "grid" }: PropertyCardProps) {
   );
 }
 
-export const PropertyCard = memo(PropertyCardComponent);
+export const PropertyCard = memo(React.forwardRef(PropertyCardComponent));

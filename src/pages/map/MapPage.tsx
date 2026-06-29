@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { FilterModal } from "@/components/filter-modal/FilterModal";
-import { useAppStore, useListingsStore } from "@/store";
+import { QuickFilterBar } from "@/components/quick-filter-bar/QuickFilterBar";
+import { useAppStore, useListingsStore, useMapStore } from "@/store";
 import { getLarkPropertiesPaginated } from "@/services/api";
 import { PropertiesGoongMap } from "@/components/goong-map/PropertiesGoongMap";
-import type { ILarkProperty } from "@/types";
 import "./MapPage.css";
 
 function MapFilterSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
@@ -38,21 +38,25 @@ export function MapPage() {
   const districts = useAppStore((s) => s.districts);
   const filter = useListingsStore((s) => s.filter);
   const setFilter = useListingsStore((s) => s.setFilter);
-  const [properties, setProperties] = useState<ILarkProperty[]>([]);
-  const [searchText, setSearchText] = useState(filter.search);
-  const [filtersOpen, setFiltersOpen] = useState(false);
+  const properties = useMapStore((s) => s.properties);
+  const mapLoaded = useMapStore((s) => s.loaded);
+  const mapCacheKey = useMapStore((s) => s.cacheKey);
+  const setMapProperties = useMapStore((s) => s.setProperties);
+  const filtersOpen = useListingsStore((s) => s.filtersOpen);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
 
   const statusActive = webConfig?.status_properties?.active ?? undefined;
   const districtOptions = filter.city ? districts.filter((d) => d.province_id === filter.city) : [];
 
-  // Keep the input in sync when search is cleared/changed from elsewhere
-  // (e.g. "Xóa bộ lọc"), but not while this debounces its own edits.
-  useEffect(() => {
-    setSearchText(filter.search);
-  }, [filter.search]);
+  const mapCacheKeyForFilter = JSON.stringify({ statusActive, filter });
 
   useEffect(() => {
+    // Same status + filter as last fetch (e.g. navigating back from a marker's
+    // detail page) — keep showing the cached data instead of refetching.
+    if (mapCacheKeyForFilter === mapCacheKey) return;
+
+    setIsFetching(true);
     getLarkPropertiesPaginated({
       page: 1,
       limit: 100,
@@ -65,14 +69,21 @@ export function MapPage() {
       priceRange: filter.priceRange || undefined,
       features: filter.features?.length ? filter.features : undefined,
     })
-      .then((r) => setProperties(r.data))
-      .catch(console.error);
-  }, [statusActive, filter]);
+      .then((r) => setMapProperties(r.data, mapCacheKeyForFilter))
+      .catch(console.error)
+      .finally(() => setIsFetching(false));
+    // mapCacheKeyForFilter already derives from statusActive + filter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mapCacheKeyForFilter, mapCacheKey, setMapProperties]);
 
-  const propertiesWithCoords = properties.filter((p) => {
-    const viTri = p.vi_tri ?? p.duong_khu_dan_cu_neu_khong_co_de_trong;
-    return !!viTri?.location;
-  });
+  const propertiesWithCoords = useMemo(
+    () =>
+      properties.filter((p) => {
+        const viTri = p.vi_tri ?? p.duong_khu_dan_cu_neu_khong_co_de_trong;
+        return !!viTri?.location;
+      }),
+    [properties],
+  );
 
   const hasFilter =
     !!filter.transactionType ||
@@ -86,65 +97,8 @@ export function MapPage() {
   return (
     <PageLayout>
       <div className="map-page">
-        <div className="map-page__map">
-          <PropertiesGoongMap properties={propertiesWithCoords} />
-        </div>
-
         <div className="map-search">
-          <div className="map-search__row">
-            <div className="map-search__input-wrap">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-                <circle cx="11" cy="11" r="7" stroke="#999" strokeWidth="2" />
-                <path d="M16.5 16.5L21 21" stroke="#999" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-              <input
-                className="map-search__input"
-                placeholder="Tìm khu vực, dự án, loại..."
-                value={searchText}
-                onChange={(e) => {
-                  setSearchText(e.target.value);
-                  useListingsStore.getState().setSearch(e.target.value);
-                }}
-              />
-            </div>
-            <button
-              className={`map-search__tune-btn${filtersOpen ? " map-search__tune-btn--active" : ""}`}
-              onClick={() => setFiltersOpen((v) => !v)}
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <line
-                  x1="4"
-                  y1="6"
-                  x2="20"
-                  y2="6"
-                  stroke="#fff"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                />
-                <line
-                  x1="4"
-                  y1="12"
-                  x2="20"
-                  y2="12"
-                  stroke="#fff"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                />
-                <line
-                  x1="4"
-                  y1="18"
-                  x2="20"
-                  y2="18"
-                  stroke="#fff"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                />
-                <circle cx="9" cy="6" r="2" fill="#2563eb" stroke="#fff" strokeWidth="1.8" />
-                <circle cx="16" cy="12" r="2" fill="#2563eb" stroke="#fff" strokeWidth="1.8" />
-                <circle cx="11" cy="18" r="2" fill="#2563eb" stroke="#fff" strokeWidth="1.8" />
-              </svg>
-            </button>
-          </div>
+          <QuickFilterBar />
 
           {filtersOpen && (
             <>
@@ -248,6 +202,14 @@ export function MapPage() {
                 )}
               </div>
             </>
+          )}
+        </div>
+
+        <div className="map-page__map">
+          {mapLoaded && !isFetching ? (
+            <PropertiesGoongMap properties={propertiesWithCoords} />
+          ) : (
+            <div className="map-page__map-skeleton skeleton-pulse" />
           )}
         </div>
       </div>

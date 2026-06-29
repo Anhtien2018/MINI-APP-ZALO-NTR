@@ -14,7 +14,7 @@ import "./ListingsPage.css";
 
 const SECTION_LABELS = [
   { title: "Căn hộ cho thuê", highlight: "đề xuất", highlightColor: "#000", key: "cho-thue" },
-  { title: "Danh sách", highlight: "BĐS cho thuê", key: "ds-cho-thue" },
+  { title: "Danh sách", highlight: "BĐS đang bán", key: "ds-cho-thue" },
 ];
 
 export function ListingsPage() {
@@ -57,7 +57,6 @@ export function ListingsPage() {
         {SECTION_LABELS.map((section, i) => {
           const items: ILarkProperty[] = sectionProperties[i as 0 | 1];
           const isLoading = !sectionLoaded[i as 0 | 1];
-          const lt = listingTypes[i];
 
           return (
             <section key={section.key} className="listing-section">
@@ -65,7 +64,7 @@ export function ListingsPage() {
                 title={section.title}
                 titleHighlight={section.highlight}
                 highlightColor={section.highlightColor}
-                viewAllLink={lt ? `${ROUTES.SEARCH}?type=${lt.id}` : ROUTES.SEARCH}
+                onViewAll={() => handleViewAll(i)}
                 viewAllLabel={i === 0 ? undefined : "Xem tất cả"}
               />
 

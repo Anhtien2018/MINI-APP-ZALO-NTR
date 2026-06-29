@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { SearchBar } from "@/components/search-bar/SearchBar";
@@ -15,7 +15,7 @@ import {
 } from "@/services/api";
 import { useAppStore } from "@/store";
 import type { ILarkProperty } from "@/types";
-import { COLORS, API_URL } from "@/constants";
+import { COLORS, API_URL, PAGE_LIMIT } from "@/constants";
 import { GoongMap } from "@/components/goong-map/GoongMap";
 import "./DetailPage.css";
 
@@ -49,10 +49,15 @@ export function DetailPage() {
 
   const [property, setProperty] = useState<ILarkProperty | null>(null);
   const [related, setRelated] = useState<ILarkProperty[]>([]);
+  const [relatedPage, setRelatedPage] = useState(1);
+  const [relatedHasMore, setRelatedHasMore] = useState(true);
+  const [isLoadingMoreRelated, setIsLoadingMoreRelated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const [mediaTab, setMediaTab] = useState<MediaTabKey>("image");
   const [amenityTab, setAmenityTab] = useState<AmenityKey | null>(null);
+  const relatedObserverRef = useRef<IntersectionObserver | null>(null);
+  const relatedMidpointRef = useRef<HTMLDivElement>(null);
 
   const recordId = extractLarkRecordId(slug);
   const agentInfo = webConfig?.agent_info ?? null;
@@ -66,24 +71,69 @@ export function DetailPage() {
   const agentInitial = agentName?.[0]?.toUpperCase() ?? "?";
   const agentPosition = agentInfo?.agent_position ?? "Môi giới bất động sản";
 
+  const fetchRelated = useCallback(
+    async (currentId: string, categoryId: string, pageNum: number, reset = false) => {
+      if (!reset) setIsLoadingMoreRelated(true);
+      try {
+        const result = await getRelatedProperties(
+          currentId,
+          categoryId,
+          statusActive,
+          PAGE_LIMIT,
+          pageNum,
+        );
+        setRelated((prev) => (reset ? result.data : [...prev, ...result.data]));
+        setRelatedPage(pageNum);
+        setRelatedHasMore(pageNum * PAGE_LIMIT < result.total);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        if (!reset) setIsLoadingMoreRelated(false);
+      }
+    },
+    [statusActive],
+  );
+
   useEffect(() => {
     setLoading(true);
     getLarkPropertyByRecordId(recordId)
       .then((p) => {
         setProperty(p);
         if (p?.danh_muc_bds?.id) {
-          getRelatedProperties(p.id, p.danh_muc_bds.id, statusActive, 4)
-            .then(setRelated)
-            .catch(console.error);
+          fetchRelated(p.id, p.danh_muc_bds.id, 1, true);
+        } else {
+          setRelated([]);
+          setRelatedHasMore(false);
         }
       })
       .catch(console.error)
       .finally(() => setLoading(false));
+    // fetchRelated already derives from statusActive; recordId alone should
+    // (re)trigger the fetch for the newly loaded property.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recordId]);
+
+  useEffect(() => {
+    if (relatedObserverRef.current) relatedObserverRef.current.disconnect();
+    const categoryId = property?.danh_muc_bds?.id;
+    if (!categoryId) return;
+    relatedObserverRef.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && relatedHasMore && !isLoadingMoreRelated) {
+          fetchRelated(property!.id, categoryId, relatedPage + 1);
+        }
+      },
+      { threshold: 0.1 },
+    );
+    // Watch the card halfway through the currently loaded list (not the very
+    // last one) so the next page starts loading before the user hits bottom.
+    if (relatedMidpointRef.current) relatedObserverRef.current.observe(relatedMidpointRef.current);
+    return () => relatedObserverRef.current?.disconnect();
+  }, [relatedHasMore, isLoadingMoreRelated, relatedPage, property, fetchRelated, related.length]);
 
   if (loading) {
     return (
-      <PageLayout>
+      <PageLayout hideBottomNav>
         <SearchBar />
         <DetailSkeleton />
       </PageLayout>
@@ -136,6 +186,7 @@ export function DetailPage() {
   const currentAmenityTab =
     amenityTab && amenityMap[amenityTab]?.length > 0 ? amenityTab : visibleAmenityTabs[0]?.key;
   const currentAmenities = currentAmenityTab ? amenityMap[currentAmenityTab] : [];
+  const relatedMidpointIndex = Math.max(0, Math.floor(related.length / 2) - 1);
 
   return (
     <PageLayout hideBottomNav>
@@ -357,9 +408,15 @@ export function DetailPage() {
               </h3>
             </div>
             <div className="detail-related">
-              {related.map((p) => (
-                <PropertyCard key={p.id} data={p} />
+              {related.map((p, i) => (
+                <PropertyCard
+                  key={p.id}
+                  data={p}
+                  ref={i === relatedMidpointIndex ? relatedMidpointRef : undefined}
+                />
               ))}
+              {isLoadingMoreRelated &&
+                Array.from({ length: 2 }, (_, i) => <RelatedCardSkeleton key={`more-${i}`} />)}
             </div>
           </div>
         )}
@@ -880,16 +937,175 @@ function WalkIcon({ size = 12, color = "#9ca3af" }: { size?: number; color?: str
   );
 }
 
-function DetailSkeleton() {
+function RelatedCardSkeleton() {
   return (
-    <div>
-      <div className="skeleton-pulse" style={{ height: 240, width: "100%" }} />
-      <div style={{ padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-        <div className="skeleton-pulse skeleton-line" style={{ width: "30%", height: 24 }} />
-        <div className="skeleton-pulse skeleton-line" style={{ width: "90%", height: 20 }} />
-        <div className="skeleton-pulse skeleton-line" style={{ width: "40%", height: 18 }} />
-        <div className="skeleton-pulse skeleton-line" style={{ width: "70%", height: 14 }} />
+    <div style={{ borderRadius: 12, overflow: "hidden" }}>
+      <div className="skeleton-pulse" style={{ aspectRatio: "3/2", borderRadius: 0 }} />
+      <div style={{ padding: "10px 10px 6px", display: "flex", flexDirection: "column", gap: 6 }}>
+        <div className="skeleton-pulse skeleton-line" style={{ width: "90%" }} />
+        <div className="skeleton-pulse skeleton-line" style={{ width: "60%" }} />
+        <div className="skeleton-pulse skeleton-line" style={{ width: "70%" }} />
       </div>
     </div>
+  );
+}
+
+function DetailSkeleton() {
+  return (
+    <>
+      {/* Media gallery */}
+      <div className="detail-media">
+        <div className="detail-media__tabs">
+          {MEDIA_TABS.slice(0, 2).map((t) => (
+            <div
+              key={t.key}
+              className="skeleton-pulse"
+              style={{ width: 64, height: 30, borderRadius: 8, flexShrink: 0 }}
+            />
+          ))}
+        </div>
+        <div
+          className="skeleton-pulse"
+          style={{ aspectRatio: "4/3", margin: "0 12px", borderRadius: 10 }}
+        />
+      </div>
+
+      {/* Info */}
+      <div className="detail-info">
+        <div className="detail-price-row">
+          <div className="skeleton-pulse" style={{ width: 130, height: 26, borderRadius: 6 }} />
+          <div className="skeleton-pulse" style={{ width: 76, height: 21, borderRadius: 6 }} />
+          <div className="skeleton-pulse" style={{ width: 76, height: 21, borderRadius: 6 }} />
+        </div>
+
+        <div
+          className="skeleton-pulse skeleton-line"
+          style={{ width: "92%", height: 18, marginBottom: 6 }}
+        />
+        <div
+          className="skeleton-pulse skeleton-line"
+          style={{ width: "65%", height: 18, marginBottom: 16 }}
+        />
+
+        <div className="detail-location">
+          <div
+            className="skeleton-pulse"
+            style={{ width: 14, height: 14, borderRadius: "50%", flexShrink: 0 }}
+          />
+          <div className="skeleton-pulse skeleton-line" style={{ width: "75%" }} />
+        </div>
+
+        <div className="detail-map">
+          <div className="skeleton-pulse" style={{ width: "100%", height: "100%" }} />
+        </div>
+
+        <div className="detail-info-grid">
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className="detail-info-grid__item">
+              <div
+                className="skeleton-pulse"
+                style={{ width: 18, height: 18, borderRadius: 4, flexShrink: 0 }}
+              />
+              <div className="detail-info-grid__text" style={{ width: "100%" }}>
+                <div className="skeleton-pulse skeleton-line" style={{ width: "50%", height: 9 }} />
+                <div className="skeleton-pulse skeleton-line" style={{ width: "75%", height: 12 }} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Amenities */}
+        <div className="detail-section">
+          <div
+            className="skeleton-pulse skeleton-line"
+            style={{ width: 150, height: 16, marginBottom: 12 }}
+          />
+          <div className="detail-amenities-tabs">
+            {Array.from({ length: 3 }, (_, i) => (
+              <div
+                key={i}
+                className="skeleton-pulse"
+                style={{ width: 64, height: 26, borderRadius: 6, flexShrink: 0 }}
+              />
+            ))}
+          </div>
+          <div className="detail-amenities-list">
+            {Array.from({ length: 6 }, (_, i) => (
+              <div key={i} className="skeleton-pulse skeleton-line" style={{ width: "85%" }} />
+            ))}
+          </div>
+        </div>
+
+        {/* Nearby places */}
+        <div className="detail-section">
+          <div
+            className="skeleton-pulse skeleton-line"
+            style={{ width: 140, height: 16, marginBottom: 12 }}
+          />
+          <div className="detail-nearby-tabs">
+            {Array.from({ length: 4 }, (_, i) => (
+              <div
+                key={i}
+                className="skeleton-pulse"
+                style={{ width: 84, height: 28, borderRadius: 20, flexShrink: 0 }}
+              />
+            ))}
+          </div>
+          <div className="detail-nearby-list">
+            {Array.from({ length: 3 }, (_, i) => (
+              <div key={i} className="detail-nearby-item">
+                <div
+                  className="skeleton-pulse"
+                  style={{ width: 30, height: 30, borderRadius: "50%", flexShrink: 0 }}
+                />
+                <div className="detail-nearby-item__text" style={{ gap: 6 }}>
+                  <div className="skeleton-pulse skeleton-line" style={{ width: "55%" }} />
+                  <div className="skeleton-pulse skeleton-line" style={{ width: "35%" }} />
+                </div>
+                <div className="skeleton-pulse" style={{ width: 36, height: 11, flexShrink: 0 }} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Description */}
+        <div className="detail-section">
+          <div
+            className="skeleton-pulse skeleton-line"
+            style={{ width: 70, height: 16, marginBottom: 10 }}
+          />
+          <div className="skeleton-pulse skeleton-line" style={{ width: "100%", marginBottom: 8 }} />
+          <div className="skeleton-pulse skeleton-line" style={{ width: "100%", marginBottom: 8 }} />
+          <div className="skeleton-pulse skeleton-line" style={{ width: "55%" }} />
+        </div>
+
+        {/* Related */}
+        <div className="detail-section">
+          <div className="detail-section__header">
+            <span className="detail-section__bar" />
+            <div className="skeleton-pulse skeleton-line" style={{ width: 170, height: 16 }} />
+          </div>
+          <div className="detail-related">
+            {Array.from({ length: 2 }, (_, i) => (
+              <RelatedCardSkeleton key={i} />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Sticky mobile contact bar */}
+      <div className="detail-mobile-bar">
+        <div
+          className="skeleton-pulse"
+          style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0 }}
+        />
+        <div className="detail-mobile-bar__info" style={{ gap: 6 }}>
+          <div className="skeleton-pulse skeleton-line" style={{ width: "55%" }} />
+          <div className="skeleton-pulse skeleton-line" style={{ width: "35%" }} />
+        </div>
+        <div className="skeleton-pulse" style={{ width: 84, height: 34, borderRadius: 8, flexShrink: 0 }} />
+        <div className="skeleton-pulse" style={{ width: 64, height: 34, borderRadius: 8, flexShrink: 0 }} />
+      </div>
+    </>
   );
 }

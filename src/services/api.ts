@@ -185,16 +185,24 @@ export async function getRelatedProperties(
   categoryId: string,
   statusId?: string,
   limit = 6,
-): Promise<ILarkProperty[]> {
+  page = 1,
+): Promise<{ data: ILarkProperty[]; total: number }> {
   let url =
     `${ENDPOINTS.larkProperties}` +
     `?fields=${LARK_PROPERTY_CARD_FIELDS}` +
     `&sort=-thoi_gian_tao` +
     `&limit=${limit}` +
+    `&page=${page}` +
+    `&meta=filter_count` +
     `&filter[id][_neq]=${encodeURIComponent(currentId)}` +
     `&filter[danh_muc_bds][_eq]=${encodeURIComponent(categoryId)}`;
   if (statusId) url += `&filter[trang_thai][_eq]=${encodeURIComponent(statusId)}`;
-  return get<ILarkProperty[]>(url);
+
+  const res = await http.get<IPropertiesResponse>(url);
+  return {
+    data: res.data.data,
+    total: res.data.meta?.filter_count ?? 0,
+  };
 }
 
 // Lark attachment URLs require Authorization header — proxy qua Next.js web app

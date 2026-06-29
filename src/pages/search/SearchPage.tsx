@@ -4,29 +4,79 @@ import { PageLayout } from "@/components/layout/PageLayout";
 import { SearchBar } from "@/components/search-bar/SearchBar";
 import { PropertyCard } from "@/components/property-card/PropertyCard";
 import { FilterModal } from "@/components/filter-modal/FilterModal";
-import { useAppStore, useListingsStore } from "@/store";
+import { QuickFilterBar } from "@/components/quick-filter-bar/QuickFilterBar";
+import { useAppStore, useListingsStore, useSearchResultsStore } from "@/store";
 import { getLarkPropertiesPaginated } from "@/services/api";
-import type { ILarkProperty } from "@/types";
 import { PAGE_LIMIT } from "@/constants";
 import "@/pages/listings/ListingsPage.css";
+
+function SearchFilterSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
+  return (
+    <div className="listings-toolbar__select-wrap">
+      <select className="listings-toolbar__select" {...props} />
+      <svg
+        className="listings-toolbar__select-arrow"
+        width="14"
+        height="14"
+        viewBox="0 0 24 24"
+        fill="none"
+      >
+        <path
+          d="M6 9l6 6 6-6"
+          stroke="#999"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    </div>
+  );
+}
+
+function SkeletonCards() {
+  return (
+    <>
+      {Array.from({ length: 12 }, (_, i) => (
+        <div key={i} className="property-skeleton">
+          <div className="property-skeleton__img skeleton-pulse" />
+          <div className="property-skeleton__body">
+            <div className="skeleton-pulse skeleton-line" style={{ width: "90%" }} />
+            <div className="skeleton-pulse skeleton-line" style={{ width: "60%" }} />
+          </div>
+        </div>
+      ))}
+    </>
+  );
+}
 
 export function SearchPage() {
   const [searchParams] = useSearchParams();
   const webConfig = useAppStore((s) => s.webConfig);
+  const businessTypes = useAppStore((s) => s.businessTypes);
+  const propertyCategories = useAppStore((s) => s.propertyCategories);
+  const cities = useAppStore((s) => s.cities);
+  const districts = useAppStore((s) => s.districts);
 
   const filter = useListingsStore((s) => s.filter);
   const setFilter = useListingsStore((s) => s.setFilter);
 
-  const [properties, setProperties] = useState<ILarkProperty[]>([]);
-  const [total, setTotal] = useState(0);
-  const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
+  const properties = useSearchResultsStore((s) => s.properties);
+  const total = useSearchResultsStore((s) => s.total);
+  const page = useSearchResultsStore((s) => s.page);
+  const hasMore = useSearchResultsStore((s) => s.hasMore);
+  const resultsCacheKey = useSearchResultsStore((s) => s.cacheKey);
+  const setResults = useSearchResultsStore((s) => s.setResults);
+  const appendResults = useSearchResultsStore((s) => s.appendResults);
+  const [isFiltering, setIsFiltering] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const filtersOpen = useListingsStore((s) => s.filtersOpen);
   const [filterOpen, setFilterOpen] = useState(false);
 
   const statusActive = webConfig?.status_properties?.active ?? undefined;
+  const districtOptions = filter.city ? districts.filter((d) => d.province_id === filter.city) : [];
   const observerRef = useRef<IntersectionObserver | null>(null);
-  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const midpointRef = useRef<HTMLDivElement>(null);
+  const filterCacheKey = JSON.stringify({ statusActive, filter });
 
   useEffect(() => {
     const typeFromUrl = searchParams.get("type") ?? "";
@@ -37,7 +87,8 @@ export function SearchPage() {
 
   const fetchProperties = useCallback(
     async (pageNum: number, reset = false) => {
-      setLoading(true);
+      if (reset) setIsFiltering(true);
+      else setIsLoadingMore(true);
       try {
         const result = await getLarkPropertiesPaginated({
           page: pageNum,
@@ -51,42 +102,47 @@ export function SearchPage() {
           priceRange: filter.priceRange || undefined,
           features: filter.features?.length ? filter.features : undefined,
         });
+        const nextHasMore = pageNum * PAGE_LIMIT < result.total;
         if (reset) {
-          setProperties(result.data);
+          setResults(result.data, result.total, nextHasMore, filterCacheKey);
         } else {
-          setProperties((prev) => [...prev, ...result.data]);
+          appendResults(result.data, pageNum, nextHasMore);
         }
-        setTotal(result.total);
-        setHasMore(pageNum * PAGE_LIMIT < result.total);
       } catch (e) {
         console.error(e);
       } finally {
-        setLoading(false);
+        if (reset) setIsFiltering(false);
+        else setIsLoadingMore(false);
       }
     },
-    [filter, statusActive],
+    [filter, statusActive, filterCacheKey, setResults, appendResults],
   );
 
   useEffect(() => {
-    setPage(1);
+    // Same filter as last fetch (e.g. navigating back from a property's
+    // detail page) — keep showing the cached results & page instead of
+    // resetting to page 1 and refetching.
+    if (filterCacheKey === resultsCacheKey) return;
     fetchProperties(1, true);
-  }, [filter]);
+    // filterCacheKey already derives from statusActive + filter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterCacheKey]);
 
   useEffect(() => {
     if (observerRef.current) observerRef.current.disconnect();
     observerRef.current = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && hasMore && !loading) {
-          const nextPage = page + 1;
-          setPage(nextPage);
-          fetchProperties(nextPage);
+        if (entries[0].isIntersecting && hasMore && !isFiltering && !isLoadingMore) {
+          fetchProperties(page + 1);
         }
       },
       { threshold: 0.1 },
     );
-    if (loadMoreRef.current) observerRef.current.observe(loadMoreRef.current);
+    // Watch the card halfway through the currently loaded list (not the very
+    // last one) so the next page starts loading before the user hits bottom.
+    if (midpointRef.current) observerRef.current.observe(midpointRef.current);
     return () => observerRef.current?.disconnect();
-  }, [hasMore, loading, page, fetchProperties]);
+  }, [hasMore, isFiltering, isLoadingMore, page, fetchProperties, properties.length]);
 
   const hasFilter =
     !!filter.transactionType ||
@@ -97,85 +153,147 @@ export function SearchPage() {
     !!filter.search ||
     (filter.features?.length ?? 0) > 0;
 
+  const midpointIndex = Math.max(0, Math.floor(properties.length / 2) - 1);
+
   return (
     <PageLayout>
       <SearchBar />
 
       <div className="listings-toolbar">
-        <button className="listings-toolbar__filter-btn" onClick={() => setFilterOpen(true)}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-            <line
-              x1="4"
-              y1="6"
-              x2="20"
-              y2="6"
-              stroke="#111"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            />
-            <line
-              x1="4"
-              y1="12"
-              x2="20"
-              y2="12"
-              stroke="#111"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            />
-            <line
-              x1="4"
-              y1="18"
-              x2="20"
-              y2="18"
-              stroke="#111"
-              strokeWidth="1.8"
-              strokeLinecap="round"
-            />
-            <circle cx="9" cy="6" r="2" fill="#fff" stroke="#111" strokeWidth="1.8" />
-            <circle cx="16" cy="12" r="2" fill="#fff" stroke="#111" strokeWidth="1.8" />
-            <circle cx="11" cy="18" r="2" fill="#fff" stroke="#111" strokeWidth="1.8" />
-          </svg>
-        </button>
-
-        {hasFilter && (
-          <button
-            className="listings-toolbar__clear-btn"
-            onClick={() => useListingsStore.getState().resetFilter()}
-          >
-            Xóa bộ lọc
-          </button>
-        )}
+        <QuickFilterBar />
       </div>
 
-      <FilterModal open={filterOpen} onClose={() => setFilterOpen(false)} />
+      {filtersOpen && (
+        <div className="listings-toolbar__filters">
+          <div className="listings-toolbar__filters-row">
+            <SearchFilterSelect
+              value={filter.city}
+              onChange={(e) => setFilter({ city: e.target.value, district: "" })}
+            >
+              <option value="">Tỉnh/ Thành phố</option>
+              {cities.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </SearchFilterSelect>
 
-      <div className="listings-grid">
-        {properties.map((p) => (
-          <PropertyCard key={p.id} data={p} />
-        ))}
-      </div>
+            <SearchFilterSelect
+              value={filter.district}
+              disabled={!filter.city || districtOptions.length === 0}
+              onChange={(e) => setFilter({ district: e.target.value })}
+            >
+              <option value="">{filter.city ? "Quận/ Huyện" : "Chọn tỉnh trước"}</option>
+              {districtOptions.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </SearchFilterSelect>
+          </div>
 
-      {loading && (
-        <div className="listings-grid">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="property-skeleton">
-              <div className="property-skeleton__img skeleton-pulse" />
-              <div className="property-skeleton__body">
-                <div className="skeleton-pulse skeleton-line" style={{ width: "90%" }} />
-                <div className="skeleton-pulse skeleton-line" style={{ width: "60%" }} />
-              </div>
-            </div>
-          ))}
+          <div className="listings-toolbar__filters-row">
+            <SearchFilterSelect
+              value={filter.transactionType}
+              onChange={(e) => setFilter({ transactionType: e.target.value, propertyType: "" })}
+            >
+              <option value="">Loại giao dịch</option>
+              {businessTypes.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </SearchFilterSelect>
+
+            <SearchFilterSelect
+              value={filter.propertyType}
+              onChange={(e) => setFilter({ propertyType: e.target.value })}
+            >
+              <option value="">Loại BĐS</option>
+              {propertyCategories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </SearchFilterSelect>
+          </div>
+
+          <div className="listings-toolbar__filters-row listings-toolbar__filters-row--bottom">
+            <button className="listings-toolbar__advanced-btn" onClick={() => setFilterOpen(true)}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none">
+                <line
+                  x1="4"
+                  y1="6"
+                  x2="20"
+                  y2="6"
+                  stroke="#555"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                />
+                <line
+                  x1="4"
+                  y1="12"
+                  x2="20"
+                  y2="12"
+                  stroke="#555"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                />
+                <line
+                  x1="4"
+                  y1="18"
+                  x2="20"
+                  y2="18"
+                  stroke="#555"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                />
+                <circle cx="9" cy="6" r="2" fill="#fff" stroke="#555" strokeWidth="1.8" />
+                <circle cx="16" cy="12" r="2" fill="#fff" stroke="#555" strokeWidth="1.8" />
+                <circle cx="11" cy="18" r="2" fill="#fff" stroke="#555" strokeWidth="1.8" />
+              </svg>
+              Lọc nâng cao
+            </button>
+
+            {hasFilter && (
+              <button
+                className="listings-toolbar__clear-btn"
+                onClick={() => useListingsStore.getState().resetFilter()}
+              >
+                Xóa bộ lọc
+              </button>
+            )}
+          </div>
         </div>
       )}
 
-      <div ref={loadMoreRef} style={{ height: 40 }} />
+      <FilterModal open={filterOpen} onClose={() => setFilterOpen(false)} />
+
+      {isFiltering ? (
+        <div className="listings-grid">
+          <SkeletonCards />
+        </div>
+      ) : (
+        <>
+          <div className="listings-grid">
+            {properties.map((p, i) => (
+              <PropertyCard key={p.id} data={p} ref={i === midpointIndex ? midpointRef : undefined} />
+            ))}
+          </div>
+
+          {isLoadingMore && (
+            <div className="listings-grid">
+              <SkeletonCards />
+            </div>
+          )}
+        </>
+      )}
 
       {!hasMore && properties.length > 0 && (
         <p className="listings-end">Đã hiển thị tất cả {total} kết quả</p>
       )}
 
-      {!loading && properties.length === 0 && (
+      {!isFiltering && properties.length === 0 && (
         <div className="listings-empty">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
             <circle cx="11" cy="11" r="8" stroke="#ccc" strokeWidth="1.5" />

@@ -1,11 +1,10 @@
-import { useNavigate } from "react-router-dom";
 import "./SectionHeader.css";
 
 interface SectionHeaderProps {
   title: string;
   titleHighlight?: string;
   highlightColor?: string;
-  viewAllLink?: string;
+  onViewAll?: () => void;
   viewAllLabel?: string;
 }
 
@@ -13,11 +12,9 @@ export function SectionHeader({
   title,
   titleHighlight,
   highlightColor,
-  viewAllLink,
+  onViewAll,
   viewAllLabel = "Xem tất cả",
 }: SectionHeaderProps) {
-  const navigate = useNavigate();
-
   return (
     <div className="section-header">
       <div className="section-header__left">
@@ -35,8 +32,8 @@ export function SectionHeader({
           )}
         </h2>
       </div>
-      {viewAllLink && (
-        <button className="section-header__view-all" onClick={() => navigate(viewAllLink)}>
+      {onViewAll && (
+        <button className="section-header__view-all" onClick={onViewAll}>
           {viewAllLabel} &rarr;
         </button>
       )}

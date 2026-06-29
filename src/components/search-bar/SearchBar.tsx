@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Header } from "zmp-ui";
 import { FilterModal } from "@/components/filter-modal/FilterModal";
 import { useListingsStore } from "@/store";
 import "./SearchBar.css";
@@ -16,6 +17,10 @@ export function SearchBar({ placeholder = "Bạn tìm kiếm gì...." }: SearchB
 
   return (
     <>
+      {/* Invisible spacer reserving the safe-area-top + right-side zone that
+          Zalo's native Mini App control (the floating "..."/close buttons) sits in,
+          so it never visually overlaps the custom bar below. */}
+
       <div className="zalo-bar">
         {/* Back button */}
         <button className="zalo-bar__back" onClick={() => navigate(-1)}>
@@ -42,6 +47,7 @@ export function SearchBar({ placeholder = "Bạn tìm kiếm gì...." }: SearchB
             {activeText || placeholder}
           </span>
         </div>
+        <Header showBackIcon={false} title="" className="zalo-bar__zaui-spacer" />
       </div>
 
       <FilterModal open={filterOpen} onClose={() => setFilterOpen(false)} />

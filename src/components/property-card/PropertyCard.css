@@ -5,6 +5,7 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-width: 0;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: box-shadow 0.2s;

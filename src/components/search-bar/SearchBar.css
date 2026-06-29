@@ -1,3 +1,14 @@
+/* Invisible spacer for Zalo's native Mini App control area — see SearchBar.tsx */
+.zalo-bar__zaui-spacer {
+  background: transparent !important;
+  box-shadow: none !important;
+  pointer-events: none;
+}
+
+.zalo-bar__zaui-spacer::after {
+  display: none;
+}
+
 .zalo-bar {
   display: flex;
   align-items: center;
