@@ -12,6 +12,7 @@ import {
   getOtherApartmentAmenities,
   getExternalAmenities,
   getBedroomAmenities,
+  getVideos,
 } from "@/services/api";
 import { STATIC_QUERY_OPTIONS } from "@/lib/queryClient";
 
@@ -122,6 +123,14 @@ export function useBedroomAmenities() {
   return useQuery({
     queryKey: configQueryKeys.bedroomAmenities,
     queryFn: getBedroomAmenities,
+    ...STATIC_QUERY_OPTIONS,
+  });
+}
+
+export function useVideos() {
+  return useQuery({
+    queryKey: ["videos"],
+    queryFn: getVideos,
     ...STATIC_QUERY_OPTIONS,
   });
 }

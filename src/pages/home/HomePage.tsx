@@ -1,10 +1,6 @@
 import React from "react";
-import { PageLayout } from "@/components/layout/PageLayout";
+import { VideoFeed } from "./VideoFeed";
 
 export function HomePage() {
-  return (
-    <PageLayout>
-      <div />
-    </PageLayout>
-  );
+  return <VideoFeed />;
 }

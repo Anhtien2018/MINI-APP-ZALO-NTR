@@ -6,6 +6,7 @@ import {
   ENDPOINTS,
   LARK_PROPERTY_CARD_FIELDS,
   LARK_PROPERTY_DETAIL_FIELDS,
+  LARK_BASE_URL,
   PAGE_LIMIT,
 } from "@/constants";
 import type {
@@ -16,6 +17,8 @@ import type {
   ILarkDistrict,
   ILarkPhuong,
   IPropertiesResponse,
+  IVideo,
+  ILarkAttachment,
 } from "@/types";
 
 const http = axios.create({
@@ -202,6 +205,20 @@ function toLarkProxyUrl(url: string): string {
   return `${WEB_APP_URL}/api/lark/image?url=${encodeURIComponent(url)}`;
 }
 
+export function getLarkAttachmentUrl(url: string): string {
+  return toLarkProxyUrl(url);
+}
+
+// Videos are uploaded via /drive/v1/files/upload_all (not attached to any
+// Bitable record), so they carry only a file_token — no ready-made url like
+// Bitable-synced property images. Must download via the Drive Files API
+// (/drive/v1/files/:token/download), not the Bitable Media API
+// (/drive/v1/medias/:token/download), which 403s for record-less tokens.
+export function getLarkVideoUrl(attachment: ILarkAttachment): string {
+  const rawUrl = attachment.url || `${LARK_BASE_URL}/drive/v1/files/${attachment.file_token}/download`;
+  return toLarkProxyUrl(rawUrl);
+}
+
 export function getLarkPropertyImageUrls(p: ILarkProperty): string[] {
   return (p.tai_len_hinh_anh_cua_bds ?? [])
     .filter((img) => !img?.type?.startsWith("video/"))
@@ -256,6 +273,30 @@ export function generatePropertySlug(title: string, larkRecordId: string): strin
 export function extractLarkRecordId(slug: string): string {
   const idx = slug.lastIndexOf("-");
   return idx === -1 ? slug : slug.slice(idx + 1);
+}
+
+const VIDEO_FIELDS = [
+  "id",
+  "status",
+  "video",
+  "lark_property.id",
+  "lark_property.lark_record_id",
+  "lark_property.tieu_de",
+  "lark_property.gia_cho_thue_gia_ban",
+  "lark_property.vi_tri",
+  "lark_property.duong_khu_dan_cu_neu_khong_co_de_trong",
+  "lark_property.dia_chi_cu_the",
+  "lark_property.tai_len_hinh_anh_cua_bds",
+  "lark_property.loai_hinh_kinh_doanh_bat_dong_san_dich_vu.id",
+  "lark_property.loai_hinh_kinh_doanh_bat_dong_san_dich_vu.name",
+  "lark_property.danh_muc_bds.id",
+  "lark_property.danh_muc_bds.name",
+].join(",");
+
+export async function getVideos(): Promise<IVideo[]> {
+  return get<IVideo[]>(
+    `${ENDPOINTS.video}?filter[status][_eq]=active&fields=${VIDEO_FIELDS}`,
+  );
 }
 
 export type MediaItem = { type: "image" | "video"; url: string };

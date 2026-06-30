@@ -1,0 +1,333 @@
+/* ── Root – covers full screen, bottom nav rendered on top ── */
+.vfeed-root {
+  position: fixed;
+  inset: 0;
+  background: #111;
+  overflow: hidden;
+  z-index: 1;
+}
+
+/* ── TikTok-style snap-scroll feed ──────────────────────── */
+.vfeed-feed {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Individual feed item ────────────────────────────────── */
+.vfeed-item {
+  position: relative;
+  height: 100%;
+  scroll-snap-align: start;
+  overflow: hidden;
+  background: #111;
+}
+
+.vfeed-item__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  cursor: pointer;
+}
+
+.vfeed-item__placeholder {
+  position: absolute;
+  inset: 0;
+  background: #222;
+}
+
+img.vfeed-item__video {
+  object-fit: cover;
+}
+
+/* ── Error / retry state ─────────────────────────────────── */
+.vfeed-item__error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #1a1a1a;
+  cursor: pointer;
+}
+
+.vfeed-item__error p {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  margin: 0;
+}
+
+.vfeed-item__error span {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* ── Buffering spinner ───────────────────────────────────── */
+.vfeed-item__buffering {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4;
+  pointer-events: none;
+}
+
+/* ── Play icon overlay ───────────────────────────────────── */
+.vfeed-item__play-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  cursor: pointer;
+}
+
+/* ── Gradient ─────────────────────────────────────────────── */
+.vfeed-item__gradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.1) 0%,
+    transparent 30%,
+    transparent 40%,
+    rgba(0, 0, 0, 0.6) 100%
+  );
+  pointer-events: none;
+}
+
+/* ── Right-side action buttons ───────────────────────────── */
+.vfeed-actions {
+  position: absolute;
+  right: 12px;
+  bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 30px;
+  z-index: 10;
+}
+
+.vfeed-action-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.vfeed-action-btn span {
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+@keyframes vfeed-wiggle {
+  0% {
+    transform: rotate(0deg);
+  }
+  4% {
+    transform: rotate(-14deg);
+  }
+  8% {
+    transform: rotate(12deg);
+  }
+  12% {
+    transform: rotate(-10deg);
+  }
+  16% {
+    transform: rotate(8deg);
+  }
+  20% {
+    transform: rotate(-4deg);
+  }
+  24% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+.vfeed-action-btn--wiggle img {
+  animation: vfeed-wiggle 3s ease-in-out infinite;
+  animation-delay: var(--wiggle-delay, 0s);
+}
+
+.vfeed-action-btn--wiggle:nth-child(1) img {
+  --wiggle-delay: 0s;
+}
+.vfeed-action-btn--wiggle:nth-child(2) img {
+  --wiggle-delay: 0.3s;
+}
+.vfeed-action-btn--wiggle:nth-child(3) img {
+  --wiggle-delay: 0.6s;
+}
+.vfeed-action-btn--wiggle:nth-child(4) img {
+  --wiggle-delay: 0.9s;
+}
+.vfeed-action-btn--wiggle:nth-child(5) img {
+  --wiggle-delay: 1.2s;
+}
+
+.vfeed-icon {
+  filter: brightness(0) invert(1);
+}
+
+.vfeed-icon--heart-active {
+  filter: brightness(0) saturate(100%) invert(21%) sepia(90%) saturate(4738%) hue-rotate(348deg);
+}
+
+.vfeed-icon--zalo {
+  filter: none;
+}
+
+/* ── Bottom property card ────────────────────────────────── */
+.vfeed-card {
+  position: absolute;
+  bottom: 14px;
+  left: 12px;
+  right: 78px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 14px;
+  padding: 10px;
+  z-index: 10;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  cursor: pointer;
+}
+
+.vfeed-card__img {
+  flex-shrink: 0;
+  width: 72px;
+  height: 72px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #ccc;
+}
+
+.vfeed-card__img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.vfeed-card__img-placeholder {
+  width: 100%;
+  height: 100%;
+  background: #ddd;
+}
+
+.vfeed-card__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.vfeed-card__title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #111;
+  text-transform: uppercase;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 3px;
+}
+
+.vfeed-card__price {
+  font-size: 12px;
+  font-weight: 700;
+  color: #e53935;
+  margin-bottom: 2px;
+}
+
+.vfeed-card__location {
+  display: flex;
+  align-items: flex-start;
+  gap: 2px;
+  font-size: 11px;
+  color: #555;
+  padding-bottom: 3px;
+  word-break: break-word;
+}
+
+.vfeed-card__location svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.vfeed-card__detail {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #e53935;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 0 0;
+  -webkit-tap-highlight-color: transparent;
+  white-space: nowrap;
+  align-self: flex-end;
+}
+
+/* ── Spinner / empty states ───────────────────────────────── */
+.vfeed-spinner-wrap {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vfeed-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: vfeed-spin 0.8s linear infinite;
+}
+
+@keyframes vfeed-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.vfeed-empty {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 15px;
+}

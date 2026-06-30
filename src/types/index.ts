@@ -146,3 +146,34 @@ export interface IFavorite {
   propertyId: string;
   savedAt: string;
 }
+
+export type Status = "active" | "in_active";
+
+export interface ILarkAttachment {
+  file_token: string;
+  name: string;
+  size?: number;
+  type: string;
+  url?: string;
+  tmp_url?: string;
+}
+
+export interface IVideoProperty {
+  id: string;
+  lark_record_id: string;
+  tieu_de: string;
+  gia_cho_thue_gia_ban?: number | null;
+  vi_tri?: ILarkViTri | null;
+  duong_khu_dan_cu_neu_khong_co_de_trong?: ILarkViTri | null;
+  dia_chi_cu_the?: string | null;
+  tai_len_hinh_anh_cua_bds?: ILarkPropertyImage[] | null;
+  loai_hinh_kinh_doanh_bat_dong_san_dich_vu?: ILarkStatusOption | null;
+  danh_muc_bds?: ILarkStatusOption | null;
+}
+
+export interface IVideo {
+  id: string;
+  status?: Status | null;
+  video?: ILarkAttachment | null;
+  lark_property?: IVideoProperty | null;
+}

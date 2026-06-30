@@ -2,6 +2,7 @@ export const API_URL = "https://cms.nguyenthinhreal.org";
 export const WEB_APP_URL = import.meta.env.VITE_WEB_APP_URL as string;
 export const DIRECTUS_TOKEN = import.meta.env.VITE_DIRECTUS_TOKEN as string;
 export const GOONG_MAPTILES_KEY = import.meta.env.VITE_GOONG_MAPTILES_KEY as string;
+export const LARK_BASE_URL = "https://open.larksuite.com/open-apis";
 
 export const ENDPOINTS = {
   webConfiguration: "/items/web_configuration",
@@ -17,6 +18,7 @@ export const ENDPOINTS = {
   otherApartmentAmenities: "/items/lark_tien_ich_khac_tien_ich_chung_cu_neu_co",
   externalAmenities: "/items/lark_tien_ich_ben_ngoai_cua_san_pham",
   bedroomAmenities: "/items/lark_tien_ich_phong_ngu_phong_chuc_nang_khac",
+  video: "/items/video",
 };
 
 export const LARK_PROPERTY_CARD_FIELDS = [
