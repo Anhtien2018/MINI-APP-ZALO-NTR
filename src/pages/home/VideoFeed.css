@@ -72,6 +72,25 @@ img.vfeed-item__video {
   color: rgba(255, 255, 255, 0.5);
 }
 
+/* ── Skeleton shimmer — shown until first frame decodes ──── */
+.vfeed-item__skeleton {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+  background-size: 200% 100%;
+  animation: vfeed-skeleton-anim 1.4s infinite;
+}
+
+@keyframes vfeed-skeleton-anim {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 /* ── Buffering spinner ───────────────────────────────────── */
 .vfeed-item__buffering {
   position: absolute;

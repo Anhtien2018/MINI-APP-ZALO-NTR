@@ -180,6 +180,7 @@ const FeedItem = forwardRef<HTMLDivElement, FeedItemProps>(({ video, active, pre
   const [playing, setPlaying] = useState(false);
   const [buffering, setBuffering] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [ready, setReady] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoUrl = video.video ? getLarkVideoUrl(video.video) : null;
   const posterUrl = getVideoPosterUrl(video.lark_property ?? null);
@@ -203,10 +204,13 @@ const FeedItem = forwardRef<HTMLDivElement, FeedItemProps>(({ video, active, pre
     setBuffering(false);
   }, [active]);
 
-  // Reset error state whenever the item leaves the mounted window, so
+  // Reset error/ready state whenever the item leaves the mounted window, so
   // scrolling back to it gives the video a fresh attempt to load.
   React.useEffect(() => {
-    if (!mountVideo) setHasError(false);
+    if (!mountVideo) {
+      setHasError(false);
+      setReady(false);
+    }
   }, [mountVideo]);
 
   const togglePlay = () => {
@@ -221,6 +225,7 @@ const FeedItem = forwardRef<HTMLDivElement, FeedItemProps>(({ video, active, pre
 
   const retry = () => {
     setHasError(false);
+    setReady(false);
     videoRef.current?.load();
   };
 
@@ -241,6 +246,7 @@ const FeedItem = forwardRef<HTMLDivElement, FeedItemProps>(({ video, active, pre
           onWaiting={() => setBuffering(true)}
           onPlaying={() => setBuffering(false)}
           onCanPlay={() => setBuffering(false)}
+          onLoadedData={() => setReady(true)}
           onError={() => setHasError(true)}
         />
       ) : hasError ? (
@@ -258,8 +264,13 @@ const FeedItem = forwardRef<HTMLDivElement, FeedItemProps>(({ video, active, pre
         <div className="vfeed-item__placeholder" />
       )}
 
-      {/* Play icon overlay — shown whenever paused */}
-      {mountVideo && !hasError && !playing && (
+      {/* Skeleton shimmer — shown until the first frame is actually decoded */}
+      {mountVideo && !hasError && !ready && (
+        <div className="vfeed-item__skeleton" />
+      )}
+
+      {/* Play icon overlay — shown once loaded and whenever paused */}
+      {mountVideo && !hasError && ready && !playing && (
         <div className="vfeed-item__play-overlay" onClick={togglePlay}>
           <svg width="64" height="64" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="12" fill="rgba(0,0,0,0.4)" />
