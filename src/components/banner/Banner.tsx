@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { useAppStore } from "@/store";
+import { useHomeConfig } from "@/hooks/useConfigQueries";
 import { API_URL } from "@/constants";
 import "./Banner.css";
 
 export function Banner() {
-  const homeConfig = useAppStore((s) => s.homeConfig);
+  const { data: homeConfig } = useHomeConfig();
   const [muted, setMuted] = useState(true);
 
   const bannerUrl = homeConfig?.banner_listing

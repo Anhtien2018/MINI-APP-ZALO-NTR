@@ -32,63 +32,52 @@ async function get<T>(endpoint: string): Promise<T> {
   return res.data.data;
 }
 
-const TTL = 10 * 60 * 1000;
-const cache = new Map<string, { data: unknown; ts: number }>();
-
-async function getCached<T>(endpoint: string): Promise<T> {
-  const hit = cache.get(endpoint);
-  if (hit && Date.now() - hit.ts < TTL) return hit.data as T;
-  const data = await get<T>(endpoint);
-  cache.set(endpoint, { data, ts: Date.now() });
-  return data;
-}
-
 export async function getWebConfiguration(): Promise<IWebConfiguration> {
-  return getCached<IWebConfiguration>(ENDPOINTS.webConfiguration);
+  return get<IWebConfiguration>(ENDPOINTS.webConfiguration);
 }
 
 export async function getHomeConfiguration(): Promise<IHomeConfiguration> {
-  return getCached<IHomeConfiguration>(ENDPOINTS.appConfiguration);
+  return get<IHomeConfiguration>(ENDPOINTS.appConfiguration);
 }
 
 export async function getBusinessTypes(): Promise<ILarkStatusOption[]> {
-  return getCached<ILarkStatusOption[]>(`${ENDPOINTS.businessType}?sort=sort`);
+  return get<ILarkStatusOption[]>(`${ENDPOINTS.businessType}?sort=sort`);
 }
 
 export async function getPropertyCategories(): Promise<ILarkStatusOption[]> {
-  return getCached<ILarkStatusOption[]>(`${ENDPOINTS.propertyCategory}?sort=sort`);
+  return get<ILarkStatusOption[]>(`${ENDPOINTS.propertyCategory}?sort=sort`);
 }
 
 export async function getCities(): Promise<ILarkStatusOption[]> {
-  return getCached<ILarkStatusOption[]>(ENDPOINTS.city);
+  return get<ILarkStatusOption[]>(ENDPOINTS.city);
 }
 
 export async function getDistricts(): Promise<ILarkDistrict[]> {
-  return getCached<ILarkDistrict[]>(ENDPOINTS.district);
+  return get<ILarkDistrict[]>(ENDPOINTS.district);
 }
 
 export async function getWards(): Promise<ILarkPhuong[]> {
-  return getCached<ILarkPhuong[]>(ENDPOINTS.ward);
+  return get<ILarkPhuong[]>(ENDPOINTS.ward);
 }
 
 export async function getPriceRanges(): Promise<ILarkStatusOption[]> {
-  return getCached<ILarkStatusOption[]>(`${ENDPOINTS.priceRange}?sort=-sort`);
+  return get<ILarkStatusOption[]>(`${ENDPOINTS.priceRange}?sort=-sort`);
 }
 
 export async function getMainDirections(): Promise<ILarkStatusOption[]> {
-  return getCached<ILarkStatusOption[]>(`${ENDPOINTS.mainDirection}?sort=sort`);
+  return get<ILarkStatusOption[]>(`${ENDPOINTS.mainDirection}?sort=sort`);
 }
 
 export async function getOtherApartmentAmenities(): Promise<ILarkStatusOption[]> {
-  return getCached<ILarkStatusOption[]>(ENDPOINTS.otherApartmentAmenities);
+  return get<ILarkStatusOption[]>(ENDPOINTS.otherApartmentAmenities);
 }
 
 export async function getExternalAmenities(): Promise<ILarkStatusOption[]> {
-  return getCached<ILarkStatusOption[]>(ENDPOINTS.externalAmenities);
+  return get<ILarkStatusOption[]>(ENDPOINTS.externalAmenities);
 }
 
 export async function getBedroomAmenities(): Promise<ILarkStatusOption[]> {
-  return getCached<ILarkStatusOption[]>(ENDPOINTS.bedroomAmenities);
+  return get<ILarkStatusOption[]>(ENDPOINTS.bedroomAmenities);
 }
 
 export async function getLarkPropertiesByType(
@@ -119,6 +108,7 @@ export interface IListingsFilter {
   search?: string;
   priceRange?: string;
   features?: string[];
+  hasLink3d?: boolean;
 }
 
 export async function getLarkPropertiesPaginated(
@@ -135,6 +125,7 @@ export async function getLarkPropertiesPaginated(
     search,
     priceRange,
     features,
+    hasLink3d,
   } = filter;
 
   let url =
@@ -153,6 +144,7 @@ export async function getLarkPropertiesPaginated(
   if (district) url += `&filter[quan][lark_quan_id][id][_eq]=${encodeURIComponent(district)}`;
   if (search) url += `&search=${encodeURIComponent(search)}`;
   if (priceRange) url += `&filter[khoang_tien][_eq]=${encodeURIComponent(priceRange)}`;
+  if (hasLink3d) url += `&filter[link_3d][_nnull]=true`;
   if (features && features.length > 0) {
     const ids = features.map(encodeURIComponent).join(",");
     url +=

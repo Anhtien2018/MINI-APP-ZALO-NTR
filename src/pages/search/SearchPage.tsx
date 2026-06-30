@@ -1,13 +1,19 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { SearchBar } from "@/components/search-bar/SearchBar";
 import { PropertyCard } from "@/components/property-card/PropertyCard";
 import { FilterModal } from "@/components/filter-modal/FilterModal";
 import { QuickFilterBar } from "@/components/quick-filter-bar/QuickFilterBar";
-import { useAppStore, useListingsStore, useSearchResultsStore } from "@/store";
-import { getLarkPropertiesPaginated } from "@/services/api";
-import { PAGE_LIMIT } from "@/constants";
+import { useListingsStore } from "@/store";
+import {
+  useWebConfig,
+  useBusinessTypes,
+  usePropertyCategories,
+  useCities,
+  useDistricts,
+} from "@/hooks/useConfigQueries";
+import { useLarkPropertiesSearch } from "@/hooks/useListingsQueries";
 import "@/pages/listings/ListingsPage.css";
 
 function SearchFilterSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
@@ -51,24 +57,14 @@ function SkeletonCards() {
 
 export function SearchPage() {
   const [searchParams] = useSearchParams();
-  const webConfig = useAppStore((s) => s.webConfig);
-  const businessTypes = useAppStore((s) => s.businessTypes);
-  const propertyCategories = useAppStore((s) => s.propertyCategories);
-  const cities = useAppStore((s) => s.cities);
-  const districts = useAppStore((s) => s.districts);
+  const { data: webConfig } = useWebConfig();
+  const { data: businessTypes = [] } = useBusinessTypes();
+  const { data: propertyCategories = [] } = usePropertyCategories();
+  const { data: cities = [] } = useCities();
+  const { data: districts = [] } = useDistricts();
 
   const filter = useListingsStore((s) => s.filter);
   const setFilter = useListingsStore((s) => s.setFilter);
-
-  const properties = useSearchResultsStore((s) => s.properties);
-  const total = useSearchResultsStore((s) => s.total);
-  const page = useSearchResultsStore((s) => s.page);
-  const hasMore = useSearchResultsStore((s) => s.hasMore);
-  const resultsCacheKey = useSearchResultsStore((s) => s.cacheKey);
-  const setResults = useSearchResultsStore((s) => s.setResults);
-  const appendResults = useSearchResultsStore((s) => s.appendResults);
-  const [isFiltering, setIsFiltering] = useState(false);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const filtersOpen = useListingsStore((s) => s.filtersOpen);
   const [filterOpen, setFilterOpen] = useState(false);
 
@@ -76,7 +72,6 @@ export function SearchPage() {
   const districtOptions = filter.city ? districts.filter((d) => d.province_id === filter.city) : [];
   const observerRef = useRef<IntersectionObserver | null>(null);
   const midpointRef = useRef<HTMLDivElement>(null);
-  const filterCacheKey = JSON.stringify({ statusActive, filter });
 
   useEffect(() => {
     const typeFromUrl = searchParams.get("type") ?? "";
@@ -85,55 +80,32 @@ export function SearchPage() {
     if (searchFromUrl) setFilter({ search: searchFromUrl });
   }, []);
 
-  const fetchProperties = useCallback(
-    async (pageNum: number, reset = false) => {
-      if (reset) setIsFiltering(true);
-      else setIsLoadingMore(true);
-      try {
-        const result = await getLarkPropertiesPaginated({
-          page: pageNum,
-          limit: PAGE_LIMIT,
-          status: statusActive,
-          transactionType: filter.transactionType || undefined,
-          propertyType: filter.propertyType || undefined,
-          city: filter.city || undefined,
-          district: filter.district || undefined,
-          search: filter.search || undefined,
-          priceRange: filter.priceRange || undefined,
-          features: filter.features?.length ? filter.features : undefined,
-        });
-        const nextHasMore = pageNum * PAGE_LIMIT < result.total;
-        if (reset) {
-          setResults(result.data, result.total, nextHasMore, filterCacheKey);
-        } else {
-          appendResults(result.data, pageNum, nextHasMore);
-        }
-      } catch (e) {
-        console.error(e);
-      } finally {
-        if (reset) setIsFiltering(false);
-        else setIsLoadingMore(false);
-      }
-    },
-    [filter, statusActive, filterCacheKey, setResults, appendResults],
-  );
+  const {
+    data,
+    isLoading: isFiltering,
+    isFetchingNextPage: isLoadingMore,
+    hasNextPage: hasMore,
+    fetchNextPage,
+  } = useLarkPropertiesSearch({
+    status: statusActive,
+    transactionType: filter.transactionType || undefined,
+    propertyType: filter.propertyType || undefined,
+    city: filter.city || undefined,
+    district: filter.district || undefined,
+    search: filter.search || undefined,
+    priceRange: filter.priceRange || undefined,
+    features: filter.features?.length ? filter.features : undefined,
+  });
 
-  useEffect(() => {
-    // Same filter as last fetch (e.g. navigating back from a property's
-    // detail page) — keep showing the cached results & page instead of
-    // resetting to page 1 and refetching.
-    if (filterCacheKey === resultsCacheKey) return;
-    fetchProperties(1, true);
-    // filterCacheKey already derives from statusActive + filter.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filterCacheKey]);
+  const properties = data?.pages.flatMap((p) => p.data) ?? [];
+  const total = data?.pages[0]?.total ?? 0;
 
   useEffect(() => {
     if (observerRef.current) observerRef.current.disconnect();
     observerRef.current = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore && !isFiltering && !isLoadingMore) {
-          fetchProperties(page + 1);
+          fetchNextPage();
         }
       },
       { threshold: 0.1 },
@@ -142,7 +114,7 @@ export function SearchPage() {
     // last one) so the next page starts loading before the user hits bottom.
     if (midpointRef.current) observerRef.current.observe(midpointRef.current);
     return () => observerRef.current?.disconnect();
-  }, [hasMore, isFiltering, isLoadingMore, page, fetchProperties, properties.length]);
+  }, [hasMore, isFiltering, isLoadingMore, fetchNextPage, properties.length]);
 
   const hasFilter =
     !!filter.transactionType ||
@@ -198,11 +170,14 @@ export function SearchPage() {
               onChange={(e) => setFilter({ transactionType: e.target.value, propertyType: "" })}
             >
               <option value="">Loại giao dịch</option>
-              {businessTypes.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
+              {businessTypes.map((t) => {
+                const s = t.name.toLowerCase();
+                return (
+                  <option key={t.id} value={t.id}>
+                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                  </option>
+                );
+              })}
             </SearchFilterSelect>
 
             <SearchFilterSelect

@@ -5,6 +5,12 @@
   margin: 0;
   padding: 0;
   -webkit-font-smoothing: antialiased;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
 }
 
 html,

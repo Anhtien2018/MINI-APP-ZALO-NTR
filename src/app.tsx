@@ -6,22 +6,9 @@ import { ListingsPage } from "@/pages/listings/ListingsPage";
 import { MapPage } from "@/pages/map/MapPage";
 import { SearchPage } from "@/pages/search/SearchPage";
 import { View360Page } from "@/pages/view360/View360Page";
-import {
-  getBedroomAmenities,
-  getBusinessTypes,
-  getCities,
-  getDistricts,
-  getExternalAmenities,
-  getHomeConfiguration,
-  getMainDirections,
-  getOtherApartmentAmenities,
-  getPriceRanges,
-  getPropertyCategories,
-  getWards,
-  getWebConfiguration,
-} from "@/services/api";
-import { useAppStore } from "@/store";
-import { useEffect } from "react";
+import { useConfigBootstrap } from "@/hooks/useConfigQueries";
+import { queryClient } from "@/lib/queryClient";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import "./app.css";
 
@@ -40,49 +27,6 @@ const SPLASH_PARTICLES: { size: number; top: string; left: string; delay: number
   ];
 
 function SplashScreen() {
-  const {
-    setWebConfig,
-    setHomeConfig,
-    setBusinessTypes,
-    setPropertyCategories,
-    setCities,
-    setDistricts,
-    setWards,
-    setPriceRanges,
-    setMainDirections,
-    setOtherApartmentAmenities,
-    setExternalAmenities,
-    setBedroomAmenities,
-    setHydrated,
-  } = useAppStore();
-
-  useEffect(() => {
-    Promise.all([
-      getWebConfiguration().then(setWebConfig),
-      getHomeConfiguration().then(setHomeConfig),
-      getBusinessTypes().then(setBusinessTypes),
-      getPropertyCategories().then(setPropertyCategories),
-      getCities().then(setCities),
-      getDistricts().then(setDistricts),
-      getWards().then(setWards),
-      getPriceRanges().then(setPriceRanges),
-      getMainDirections()
-        .then(setMainDirections)
-        .catch(() => {}),
-      getOtherApartmentAmenities()
-        .then(setOtherApartmentAmenities)
-        .catch(() => {}),
-      getExternalAmenities()
-        .then(setExternalAmenities)
-        .catch(() => {}),
-      getBedroomAmenities()
-        .then(setBedroomAmenities)
-        .catch(() => {}),
-    ])
-      .catch(console.error)
-      .finally(() => setHydrated(true));
-  }, []);
-
   return (
     <div className="splash">
       {SPLASH_PARTICLES.map((p, i) => (
@@ -130,9 +74,9 @@ function SplashScreen() {
 }
 
 function AppContent() {
-  const isHydrated = useAppStore((s) => s.isHydrated);
+  const { isPending } = useConfigBootstrap();
 
-  if (!isHydrated) return <SplashScreen />;
+  if (isPending) return <SplashScreen />;
 
   return (
     <Routes>
@@ -150,8 +94,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AppContent />
-    </BrowserRouter>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 }

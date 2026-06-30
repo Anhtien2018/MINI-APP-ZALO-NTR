@@ -5,10 +5,11 @@ import { SearchBar } from "@/components/search-bar/SearchBar";
 import { Banner } from "@/components/banner/Banner";
 import { SectionHeader } from "@/components/section-header/SectionHeader";
 import { PropertyCard } from "@/components/property-card/PropertyCard";
-import { useAppStore, useHomeStore, useListingsStore } from "@/store";
-import { getLarkPropertiesByType, getLarkPropertyImageUrls } from "@/services/api";
+import { useListingsStore } from "@/store";
+import { useWebConfig } from "@/hooks/useConfigQueries";
+import { useLarkPropertiesByType } from "@/hooks/useListingsQueries";
+import { getLarkPropertyImageUrls } from "@/services/api";
 import { preloadImages } from "@/utils/preloadImages";
-import type { ILarkProperty } from "@/types";
 import { ROUTES } from "@/constants";
 import "./ListingsPage.css";
 
@@ -19,28 +20,22 @@ const SECTION_LABELS = [
 
 export function ListingsPage() {
   const navigate = useNavigate();
-  const webConfig = useAppStore((s) => s.webConfig);
-  const sectionProperties = useHomeStore((s) => s.sectionProperties);
-  const sectionLoaded = useHomeStore((s) => s.sectionLoaded);
-  const setSectionProperties = useHomeStore((s) => s.setSectionProperties);
+  const { data: webConfig } = useWebConfig();
   const setFilter = useListingsStore((s) => s.setFilter);
 
   const listingTypes = webConfig?.listing_type ?? [];
   const statusActive = webConfig?.status_properties?.active ?? null;
 
-  useEffect(() => {
-    if (!webConfig || listingTypes.length === 0) return;
+  const section0 = useLarkPropertiesByType(listingTypes[0]?.id, statusActive, 6);
+  const section1 = useLarkPropertiesByType(listingTypes[1]?.id, statusActive, 6);
+  const sections = [section0, section1] as const;
 
-    listingTypes.slice(0, 2).forEach((lt, i) => {
-      if (sectionLoaded[i as 0 | 1]) return;
-      getLarkPropertiesByType(lt.id, statusActive, 6)
-        .then((items) => {
-          setSectionProperties(i as 0 | 1, items);
-          preloadImages(items.flatMap(getLarkPropertyImageUrls));
-        })
-        .catch(console.error);
+  useEffect(() => {
+    sections.forEach((s) => {
+      if (s.data) preloadImages(s.data.flatMap(getLarkPropertyImageUrls));
     });
-  }, [webConfig]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [section0.data, section1.data]);
 
   const handleViewAll = (typeIndex: number) => {
     const lt = listingTypes[typeIndex];
@@ -55,8 +50,8 @@ export function ListingsPage() {
 
       <div className="listing-sections">
         {SECTION_LABELS.map((section, i) => {
-          const items: ILarkProperty[] = sectionProperties[i as 0 | 1];
-          const isLoading = !sectionLoaded[i as 0 | 1];
+          const items = sections[i].data ?? [];
+          const isLoading = sections[i].isLoading;
 
           return (
             <section key={section.key} className="listing-section">

@@ -1,9 +1,16 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { FilterModal } from "@/components/filter-modal/FilterModal";
 import { QuickFilterBar } from "@/components/quick-filter-bar/QuickFilterBar";
-import { useAppStore, useListingsStore, useMapStore } from "@/store";
-import { getLarkPropertiesPaginated } from "@/services/api";
+import { useListingsStore } from "@/store";
+import {
+  useWebConfig,
+  useBusinessTypes,
+  usePropertyCategories,
+  useCities,
+  useDistricts,
+} from "@/hooks/useConfigQueries";
+import { useLarkPropertiesMap } from "@/hooks/useListingsQueries";
 import { PropertiesGoongMap } from "@/components/goong-map/PropertiesGoongMap";
 import "./MapPage.css";
 
@@ -31,58 +38,38 @@ function MapFilterSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
 }
 
 export function MapPage() {
-  const webConfig = useAppStore((s) => s.webConfig);
-  const businessTypes = useAppStore((s) => s.businessTypes);
-  const propertyCategories = useAppStore((s) => s.propertyCategories);
-  const cities = useAppStore((s) => s.cities);
-  const districts = useAppStore((s) => s.districts);
+  const { data: webConfig } = useWebConfig();
+  const { data: businessTypes = [] } = useBusinessTypes();
+  const { data: propertyCategories = [] } = usePropertyCategories();
+  const { data: cities = [] } = useCities();
+  const { data: districts = [] } = useDistricts();
   const filter = useListingsStore((s) => s.filter);
   const setFilter = useListingsStore((s) => s.setFilter);
-  const properties = useMapStore((s) => s.properties);
-  const mapLoaded = useMapStore((s) => s.loaded);
-  const mapCacheKey = useMapStore((s) => s.cacheKey);
-  const setMapProperties = useMapStore((s) => s.setProperties);
   const filtersOpen = useListingsStore((s) => s.filtersOpen);
   const [advancedOpen, setAdvancedOpen] = useState(false);
-  const [isFetching, setIsFetching] = useState(false);
 
   const statusActive = webConfig?.status_properties?.active ?? undefined;
   const districtOptions = filter.city ? districts.filter((d) => d.province_id === filter.city) : [];
 
-  const mapCacheKeyForFilter = JSON.stringify({ statusActive, filter });
-
-  useEffect(() => {
-    // Same status + filter as last fetch (e.g. navigating back from a marker's
-    // detail page) — keep showing the cached data instead of refetching.
-    if (mapCacheKeyForFilter === mapCacheKey) return;
-
-    setIsFetching(true);
-    getLarkPropertiesPaginated({
-      page: 1,
-      limit: 100,
-      status: statusActive,
-      transactionType: filter.transactionType || undefined,
-      propertyType: filter.propertyType || undefined,
-      city: filter.city || undefined,
-      district: filter.district || undefined,
-      search: filter.search || undefined,
-      priceRange: filter.priceRange || undefined,
-      features: filter.features?.length ? filter.features : undefined,
-    })
-      .then((r) => setMapProperties(r.data, mapCacheKeyForFilter))
-      .catch(console.error)
-      .finally(() => setIsFetching(false));
-    // mapCacheKeyForFilter already derives from statusActive + filter.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mapCacheKeyForFilter, mapCacheKey, setMapProperties]);
+  const { data, isFetching } = useLarkPropertiesMap({
+    status: statusActive,
+    transactionType: filter.transactionType || undefined,
+    propertyType: filter.propertyType || undefined,
+    city: filter.city || undefined,
+    district: filter.district || undefined,
+    search: filter.search || undefined,
+    priceRange: filter.priceRange || undefined,
+    features: filter.features?.length ? filter.features : undefined,
+  });
+  const properties = data?.data ?? [];
 
   const propertiesWithCoords = useMemo(
     () =>
-      properties.filter((p) => {
+      (data?.data ?? []).filter((p) => {
         const viTri = p.vi_tri ?? p.duong_khu_dan_cu_neu_khong_co_de_trong;
         return !!viTri?.location;
       }),
-    [properties],
+    [data],
   );
 
   const hasFilter =
@@ -135,11 +122,14 @@ export function MapPage() {
                   onChange={(e) => setFilter({ transactionType: e.target.value, propertyType: "" })}
                 >
                   <option value="">Loại giao dịch</option>
-                  {businessTypes.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
+                  {businessTypes.map((t) => {
+                    const s = t.name.toLowerCase();
+                    return (
+                      <option key={t.id} value={t.id}>
+                        {s.charAt(0).toUpperCase() + s.slice(1)}
+                      </option>
+                    );
+                  })}
                 </MapFilterSelect>
 
                 <MapFilterSelect
@@ -206,7 +196,7 @@ export function MapPage() {
         </div>
 
         <div className="map-page__map">
-          {mapLoaded && !isFetching ? (
+          {!isFetching ? (
             <PropertiesGoongMap properties={propertiesWithCoords} />
           ) : (
             <div className="map-page__map-skeleton skeleton-pulse" />

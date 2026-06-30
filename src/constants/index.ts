@@ -38,6 +38,7 @@ export const LARK_PROPERTY_CARD_FIELDS = [
   "trang_thai.name",
   "so_dien_thoai_chu_nha",
   "ten_chu_nha",
+  "link_3d",
 ].join(",");
 
 export const LARK_PROPERTY_DETAIL_FIELDS = [
@@ -88,7 +89,7 @@ export const COLORS = {
   orange: "#ff6b35",
 };
 
-export const PAGE_LIMIT = 20;
+export const PAGE_LIMIT = 50;
 export const SEARCH_DEBOUNCE_MS = 400;
 
 export const ROUTES = {

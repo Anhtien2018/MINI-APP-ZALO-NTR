@@ -7,7 +7,7 @@ import {
   formatLarkPrice,
   generatePropertySlug,
 } from "@/services/api";
-import { useAppStore } from "@/store";
+import { useWebConfig } from "@/hooks/useConfigQueries";
 import { useFavoritesStore } from "@/store";
 import { ROUTES, COLORS } from "@/constants";
 import "./PropertyCard.css";
@@ -22,7 +22,7 @@ function PropertyCardComponent(
   ref: React.Ref<HTMLDivElement>,
 ) {
   const navigate = useNavigate();
-  const webConfig = useAppStore((s) => s.webConfig);
+  const { data: webConfig } = useWebConfig();
   const isFav = useFavoritesStore((s) => s.isFavorite(data.id));
   const addFav = useFavoritesStore((s) => s.addFavorite);
   const removeFav = useFavoritesStore((s) => s.removeFavorite);

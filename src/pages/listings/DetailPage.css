@@ -75,16 +75,11 @@
   border-radius: 10px;
 }
 
-.detail-media__360 {
+.detail-media__360-frame {
+  width: 100%;
   aspect-ratio: 4/3;
-  background: #f9fafb;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-  margin: 0 12px;
-  border-radius: 10px;
+  border: none;
+  display: block;
 }
 
 .detail-media__360-btn {
@@ -308,6 +303,11 @@
   margin-bottom: 16px;
 }
 
+.detail-location svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
 .detail-location__text {
   min-width: 0;
   overflow-wrap: anywhere;
@@ -315,11 +315,29 @@
 }
 
 .detail-map {
+  position: relative;
   height: 200px;
   border-radius: 10px;
   overflow: hidden;
   border: 1px solid #e5e7eb;
   margin-bottom: 18px;
+}
+
+.detail-map__open-btn {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #fff;
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #228b22;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  pointer-events: none;
 }
 
 .detail-map__empty {

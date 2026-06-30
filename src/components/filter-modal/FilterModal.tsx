@@ -1,6 +1,17 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAppStore, useListingsStore, EMPTY_FILTER, type ListingsFilter } from "@/store";
+import { useListingsStore, EMPTY_FILTER, type ListingsFilter } from "@/store";
+import {
+  useBusinessTypes,
+  useCities,
+  useDistricts,
+  useExternalAmenities,
+  useMainDirections,
+  useOtherApartmentAmenities,
+  useBedroomAmenities,
+  usePropertyCategories,
+  usePriceRanges,
+} from "@/hooks/useConfigQueries";
 import { ROUTES } from "@/constants";
 import "./FilterModal.css";
 
@@ -10,108 +21,33 @@ interface FilterModalProps {
 }
 
 const BEDROOM_OPTIONS = ["1", "2", "3", "4", "5+"];
-const PRICE_MAX = 50;
-const AREA_MAX = 500;
 
-function DualRangeSlider({
-  min,
-  max,
-  step,
-  valueMin,
-  valueMax,
-  unit,
-  onChange,
-}: {
-  min: number;
-  max: number;
-  step: number;
-  valueMin: number;
-  valueMax: number;
-  unit: string;
-  onChange: (min: number, max: number) => void;
-}) {
-  const rangeRef = useRef<HTMLDivElement>(null);
 
-  const pct = (v: number) => ((v - min) / (max - min)) * 100;
-  const left = pct(valueMin);
-  const right = pct(valueMax);
-
-  const trackStyle = {
-    background: `linear-gradient(to right, #e5e7eb ${left}%, #228b22 ${left}%, #228b22 ${right}%, #e5e7eb ${right}%)`,
-  };
-
-  const formatVal = (v: number) =>
-    unit === "tỷ" ? (v === 0 ? "0" : `${v} tỷ`) : v === 0 ? "0 m²" : `${v} m²`;
-
-  return (
-    <div className="dual-slider">
-      <div className="dual-slider__labels">
-        <span className="dual-slider__val">{formatVal(valueMin)}</span>
-        <span className="dual-slider__val">{formatVal(valueMax)}</span>
-      </div>
-      <div className="dual-slider__track-wrap" ref={rangeRef}>
-        <div className="dual-slider__track" style={trackStyle} />
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={step}
-          value={valueMin}
-          className="dual-slider__input dual-slider__input--min"
-          onChange={(e) => {
-            const v = Number(e.target.value);
-            if (v < valueMax) onChange(v, valueMax);
-          }}
-        />
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={step}
-          value={valueMax}
-          className="dual-slider__input dual-slider__input--max"
-          onChange={(e) => {
-            const v = Number(e.target.value);
-            if (v > valueMin) onChange(valueMin, v);
-          }}
-        />
-      </div>
-    </div>
-  );
-}
 
 export function FilterModal({ open, onClose }: FilterModalProps) {
   const navigate = useNavigate();
   const globalFilter = useListingsStore((s) => s.filter);
   const setGlobalFilter = useListingsStore((s) => s.setFilter);
 
-  const businessTypes = useAppStore((s) => s.businessTypes);
-  const propertyCategories = useAppStore((s) => s.propertyCategories);
-  const cities = useAppStore((s) => s.cities);
-  const districts = useAppStore((s) => s.districts);
-  const priceRanges = useAppStore((s) => s.priceRanges);
-  const mainDirections = useAppStore((s) => s.mainDirections);
-  const otherApartmentAmenities = useAppStore((s) => s.otherApartmentAmenities);
-  const externalAmenities = useAppStore((s) => s.externalAmenities);
-  const bedroomAmenities = useAppStore((s) => s.bedroomAmenities);
+  const { data: businessTypes = [] } = useBusinessTypes();
+  const { data: propertyCategories = [] } = usePropertyCategories();
+  const { data: cities = [] } = useCities();
+  const { data: districts = [] } = useDistricts();
+  const { data: mainDirections = [] } = useMainDirections();
+  const { data: otherApartmentAmenities = [] } = useOtherApartmentAmenities();
+  const { data: externalAmenities = [] } = useExternalAmenities();
+  const { data: bedroomAmenities = [] } = useBedroomAmenities();
+  const { data: priceRanges = [] } = usePriceRanges();
 
   const [draft, setDraft] = useState<ListingsFilter>({ ...globalFilter });
   const [bedrooms, setBedrooms] = useState<string[]>([]);
   const [amenitiesExpanded, setAmenitiesExpanded] = useState(false);
-  const [priceMin, setPriceMin] = useState(0);
-  const [priceMax, setPriceMax] = useState(PRICE_MAX);
-  const [areaMin, setAreaMin] = useState(0);
-  const [areaMax, setAreaMax] = useState(AREA_MAX);
   const sheetRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (open) {
       setDraft({ ...globalFilter });
       setBedrooms([]);
-      setPriceMin(0);
-      setPriceMax(PRICE_MAX);
-      setAreaMin(0);
-      setAreaMax(AREA_MAX);
     }
     // Only re-sync when the modal transitions open — re-running this on every
     // globalFilter change (e.g. the live debounced search below) would wipe
@@ -152,10 +88,6 @@ export function FilterModal({ open, onClose }: FilterModalProps) {
   const handleReset = () => {
     setDraft({ ...EMPTY_FILTER });
     setBedrooms([]);
-    setPriceMin(0);
-    setPriceMax(PRICE_MAX);
-    setAreaMin(0);
-    setAreaMax(AREA_MAX);
   };
 
   const handleSearch = () => {
@@ -169,8 +101,7 @@ export function FilterModal({ open, onClose }: FilterModalProps) {
     (draft.propertyType ? 1 : 0) +
     (draft.city ? 1 : 0) +
     (draft.district ? 1 : 0) +
-    (priceMin > 0 || priceMax < PRICE_MAX ? 1 : 0) +
-    (areaMin > 0 || areaMax < AREA_MAX ? 1 : 0) +
+    (draft.priceRange ? 1 : 0) +
     (draft.features?.length ?? 0) +
     bedrooms.length;
 
@@ -236,14 +167,14 @@ export function FilterModal({ open, onClose }: FilterModalProps) {
               </div>
             </div>
             <div className="filter-field">
-              <label className="filter-label">Loại tài sản</label>
+              <label className="filter-label">Loại BĐS</label>
               <div className="filter-select-wrap">
                 <select
                   className="filter-select"
                   value={draft.propertyType}
                   onChange={(e) => setDraft({ ...draft, propertyType: e.target.value })}
                 >
-                  <option value="">Tài sản</option>
+                  <option value="">Loại BĐS</option>
                   {propertyCategories.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
@@ -324,36 +255,24 @@ export function FilterModal({ open, onClose }: FilterModalProps) {
 
           {/* Khoảng giá */}
           <div className="filter-field">
-            <span className="filter-label">Khoảng giá</span>
-            <DualRangeSlider
-              min={0}
-              max={PRICE_MAX}
-              step={1}
-              valueMin={priceMin}
-              valueMax={priceMax}
-              unit="tỷ"
-              onChange={(mn, mx) => {
-                setPriceMin(mn);
-                setPriceMax(mx);
-              }}
-            />
-          </div>
-
-          {/* Diện tích */}
-          <div className="filter-field">
-            <span className="filter-label">Diện tích</span>
-            <DualRangeSlider
-              min={0}
-              max={AREA_MAX}
-              step={10}
-              valueMin={areaMin}
-              valueMax={areaMax}
-              unit="m²"
-              onChange={(mn, mx) => {
-                setAreaMin(mn);
-                setAreaMax(mx);
-              }}
-            />
+            <label className="filter-label">Khoảng giá</label>
+            <div className="filter-select-wrap">
+              <select
+                className={`filter-select${!draft.priceRange ? " filter-select--placeholder" : ""}`}
+                value={draft.priceRange}
+                onChange={(e) => setDraft({ ...draft, priceRange: e.target.value })}
+              >
+                <option value="">Chọn khoảng giá</option>
+                {priceRanges.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+              <svg className="filter-select__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <path d="M6 9l6 6 6-6" stroke="#999" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </div>
           </div>
 
           {/* Hướng */}

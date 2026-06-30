@@ -1,27 +1,16 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { PropertyCard } from "@/components/property-card/PropertyCard";
 import { useFavoritesStore } from "@/store";
-import { getLarkPropertyByRecordId, extractLarkRecordId } from "@/services/api";
-import type { ILarkProperty } from "@/types";
+import { useFavoriteProperties } from "@/hooks/useListingsQueries";
 import "./FavoritesPage.css";
 
 export function FavoritesPage() {
   const favorites = useFavoritesStore((s) => s.favorites);
-  const [properties, setProperties] = useState<ILarkProperty[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (favorites.length === 0) {
-      setProperties([]);
-      return;
-    }
-    setLoading(true);
-    Promise.all(favorites.map((f) => getLarkPropertyByRecordId(f.propertyId).catch(() => null)))
-      .then((results) => setProperties(results.filter(Boolean) as ILarkProperty[]))
-      .finally(() => setLoading(false));
-  }, [favorites]);
+  const { properties, isLoading: loading } = useFavoriteProperties(
+    favorites.map((f) => f.propertyId),
+  );
 
   return (
     <PageLayout>

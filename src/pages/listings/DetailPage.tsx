@@ -1,21 +1,20 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { SearchBar } from "@/components/search-bar/SearchBar";
 import { PropertyCard } from "@/components/property-card/PropertyCard";
 import {
-  getLarkPropertyByRecordId,
   getLarkPropertyMedia,
   getLarkPropertyLocation,
   getLarkPropertyCoordinates,
   formatLarkPrice,
   extractLarkRecordId,
-  getRelatedProperties,
   type MediaItem,
 } from "@/services/api";
-import { useAppStore } from "@/store";
+import { useWebConfig } from "@/hooks/useConfigQueries";
+import { usePropertyDetail, useRelatedProperties } from "@/hooks/useListingsQueries";
 import type { ILarkProperty } from "@/types";
-import { COLORS, API_URL, PAGE_LIMIT } from "@/constants";
+import { COLORS, API_URL } from "@/constants";
 import { GoongMap } from "@/components/goong-map/GoongMap";
 import "./DetailPage.css";
 
@@ -45,14 +44,8 @@ const NEARBY_CATEGORIES = [
 export function DetailPage() {
   const { slug = "" } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const webConfig = useAppStore((s) => s.webConfig);
+  const { data: webConfig } = useWebConfig();
 
-  const [property, setProperty] = useState<ILarkProperty | null>(null);
-  const [related, setRelated] = useState<ILarkProperty[]>([]);
-  const [relatedPage, setRelatedPage] = useState(1);
-  const [relatedHasMore, setRelatedHasMore] = useState(true);
-  const [isLoadingMoreRelated, setIsLoadingMoreRelated] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const [mediaTab, setMediaTab] = useState<MediaTabKey>("image");
   const [amenityTab, setAmenityTab] = useState<AmenityKey | null>(null);
@@ -61,9 +54,12 @@ export function DetailPage() {
 
   const recordId = extractLarkRecordId(slug);
   const agentInfo = webConfig?.agent_info ?? null;
+  const statusActive = webConfig?.status_properties?.active ?? undefined;
+
+  const { data: property = null, isLoading: loading } = usePropertyDetail(recordId);
+
   const phone = agentInfo?.phone ?? property?.so_dien_thoai_chu_nha ?? "";
   const zalo = agentInfo?.zalo ?? phone;
-  const statusActive = webConfig?.status_properties?.active ?? undefined;
   const agentName = agentInfo?.agent_name ?? property?.ten_chu_nha ?? "";
   const agentAvatar = agentInfo?.agent_avatar_url
     ? `${API_URL}/assets/${agentInfo.agent_avatar_url}`
@@ -71,56 +67,22 @@ export function DetailPage() {
   const agentInitial = agentName?.[0]?.toUpperCase() ?? "?";
   const agentPosition = agentInfo?.agent_position ?? "Môi giới bất động sản";
 
-  const fetchRelated = useCallback(
-    async (currentId: string, categoryId: string, pageNum: number, reset = false) => {
-      if (!reset) setIsLoadingMoreRelated(true);
-      try {
-        const result = await getRelatedProperties(
-          currentId,
-          categoryId,
-          statusActive,
-          PAGE_LIMIT,
-          pageNum,
-        );
-        setRelated((prev) => (reset ? result.data : [...prev, ...result.data]));
-        setRelatedPage(pageNum);
-        setRelatedHasMore(pageNum * PAGE_LIMIT < result.total);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        if (!reset) setIsLoadingMoreRelated(false);
-      }
-    },
-    [statusActive],
-  );
-
-  useEffect(() => {
-    setLoading(true);
-    getLarkPropertyByRecordId(recordId)
-      .then((p) => {
-        setProperty(p);
-        if (p?.danh_muc_bds?.id) {
-          fetchRelated(p.id, p.danh_muc_bds.id, 1, true);
-        } else {
-          setRelated([]);
-          setRelatedHasMore(false);
-        }
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-    // fetchRelated already derives from statusActive; recordId alone should
-    // (re)trigger the fetch for the newly loaded property.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recordId]);
+  const categoryId = property?.danh_muc_bds?.id;
+  const {
+    data: relatedData,
+    hasNextPage: relatedHasMore,
+    isFetchingNextPage: isLoadingMoreRelated,
+    fetchNextPage: fetchMoreRelated,
+  } = useRelatedProperties(property?.id, categoryId, statusActive);
+  const related = relatedData?.pages.flatMap((p) => p.data) ?? [];
 
   useEffect(() => {
     if (relatedObserverRef.current) relatedObserverRef.current.disconnect();
-    const categoryId = property?.danh_muc_bds?.id;
     if (!categoryId) return;
     relatedObserverRef.current = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && relatedHasMore && !isLoadingMoreRelated) {
-          fetchRelated(property!.id, categoryId, relatedPage + 1);
+          fetchMoreRelated();
         }
       },
       { threshold: 0.1 },
@@ -129,7 +91,7 @@ export function DetailPage() {
     // last one) so the next page starts loading before the user hits bottom.
     if (relatedMidpointRef.current) relatedObserverRef.current.observe(relatedMidpointRef.current);
     return () => relatedObserverRef.current?.disconnect();
-  }, [relatedHasMore, isLoadingMoreRelated, relatedPage, property, fetchRelated, related.length]);
+  }, [relatedHasMore, isLoadingMoreRelated, categoryId, fetchMoreRelated, related.length]);
 
   if (loading) {
     return (
@@ -209,17 +171,12 @@ export function DetailPage() {
 
         {mediaTab === "360" ? (
           has3D ? (
-            <div className="detail-media__360">
-              <View360Icon />
-              <a
-                href={property.link_3d!}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="detail-media__360-btn"
-              >
-                Mở liên kết 360 độ
-              </a>
-            </div>
+            <iframe
+              src={property.link_3d!}
+              className="detail-media__360-frame"
+              allowFullScreen
+              title="Tour 360°"
+            />
           ) : (
             <div className="detail-media__empty">Chưa có dữ liệu 360 độ</div>
           )
@@ -295,9 +252,23 @@ export function DetailPage() {
         </p>
 
         {/* Map */}
-        <div className="detail-map">
+        <div
+          className="detail-map"
+          onClick={() => coords && window.open(`https://www.google.com/maps?q=${coords.lat},${coords.lng}`, "_blank")}
+          style={coords ? { cursor: "pointer" } : undefined}
+        >
           {coords ? (
-            <GoongMap lat={coords.lat} lng={coords.lng} />
+            <>
+              <GoongMap lat={coords.lat} lng={coords.lng} />
+              <div className="detail-map__open-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                  <polyline points="15 3 21 3 21 9" />
+                  <line x1="10" y1="14" x2="21" y2="3" />
+                </svg>
+                Mở bản đồ
+              </div>
+            </>
           ) : (
             <div className="detail-map__empty">
               <svg width="32" height="32" viewBox="0 0 24 24" fill={COLORS.teal}>
@@ -315,7 +286,7 @@ export function DetailPage() {
             label="Tiền cọc"
             value={property.gia_deal_lai ? formatLarkPrice(property.gia_deal_lai) : "Thỏa thuận"}
           />
-          <InfoGridItem icon={<AreaIcon />} label="Diện tích" value={area ? `${area} m²` : "—"} />
+          <InfoGridItem icon={<AreaIcon />} label="Diện tích" value={area ? `${parseFloat(area)} m²` : "—"} />
           <InfoGridItem
             icon={<HomeWorkIcon />}
             label="Tình trạng"
