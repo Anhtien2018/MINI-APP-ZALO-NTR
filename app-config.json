@@ -1,5 +1,6 @@
 {
   "app": {
+    "id": "3367787553002100371",
     "title": "Nguyễn Thịnh Real",
     "icon": "https://cms.nguyenthinhreal.org/assets/logo.png",
     "coverImage": "https://cms.nguyenthinhreal.org/assets/banner.jpg"
@@ -8,5 +9,10 @@
     "defaultLocale": "vi",
     "navigationType": "stack"
   },
-  "template": "classic"
+  "template": "classic",
+  "listCSS": [],
+  "listSyncJS": [
+    "/assets/index.js"
+  ],
+  "listAsyncJS": []
 }

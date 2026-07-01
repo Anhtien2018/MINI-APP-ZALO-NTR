@@ -359,7 +359,7 @@ export function DetailPage() {
         )}
 
         {/* Nearby places */}
-        <NearbyPlacesSection cachedPlaces={property.nearby_places} />
+        <NearbyPlacesSection cachedPlaces={property.dia_diem_lan_can} />
 
         {/* Description */}
         {property.ghi_chu_them && (
@@ -771,7 +771,7 @@ function fmtDist(m: number): string {
   return m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1)} km`;
 }
 
-function NearbyPlacesSection({ cachedPlaces }: { cachedPlaces: ILarkProperty["nearby_places"] }) {
+function NearbyPlacesSection({ cachedPlaces }: { cachedPlaces: ILarkProperty["dia_diem_lan_can"] }) {
   const [tab, setTab] = useState(0);
 
   if (!cachedPlaces) return null;

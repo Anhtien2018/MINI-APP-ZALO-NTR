@@ -116,7 +116,9 @@ export interface ILarkProperty {
   tinh_thanh_pho_tw_duoc_phan_cong: ILarkStatusOption | null;
   phuong: ILarkPhuong | null;
   quan: Array<{ id: number; lark_properties_id: string; lark_quan_id: ILarkDistrict }>;
-  nearby_places: Record<
+  nguoi_tao: { id: string; first_name: string; email: string } | null;
+  nguoi_sale: { id: string; first_name: string; email: string } | null;
+  dia_diem_lan_can: Record<
     string,
     Array<{
       place_id: string;
