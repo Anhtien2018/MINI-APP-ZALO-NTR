@@ -22,9 +22,9 @@ import "./VideoFeed.css";
 // black while the actual video data is still loading.
 function getVideoPosterUrl(property: IVideoProperty | null): string | null {
   const thumb = (property?.tai_len_hinh_anh_cua_bds ?? []).find(
-    (img) => !img?.type?.startsWith("video/"),
+    (img) => !!img?.file_token && !img?.type?.startsWith("video/"),
   );
-  return thumb ? getLarkAttachmentUrl(thumb.url) : null;
+  return thumb ? getLarkAttachmentUrl(thumb.file_token) : null;
 }
 
 /* ── Right-side action icon list ──────────────────────────── */

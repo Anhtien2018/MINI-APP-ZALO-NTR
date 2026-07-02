@@ -6,7 +6,6 @@ import {
   ENDPOINTS,
   LARK_PROPERTY_CARD_FIELDS,
   LARK_PROPERTY_DETAIL_FIELDS,
-  LARK_BASE_URL,
   PAGE_LIMIT,
 } from "@/constants";
 import type {
@@ -200,29 +199,30 @@ export async function getRelatedProperties(
   };
 }
 
-// Lark attachment URLs require Authorization header — proxy qua Next.js web app
-function toLarkProxyUrl(url: string): string {
-  return `${WEB_APP_URL}/api/lark/image?url=${encodeURIComponent(url)}`;
+// Lark attachment URLs require an Authorization header to download, which
+// <img>/<video> tags can't send — proxy qua Next.js web app, by file_token
+// rather than the stored `url`/`tmp_url`. Those embed a bitablePerm scope
+// tied to a specific table + revision and 403 once the table changes again
+// (e.g. after any edit, or once the record moves between tables) — the web
+// app's proxy re-resolves the correct download URL for the token on each
+// request instead (and falls back to the plain Drive Files API for tokens
+// not attached to any Bitable record, e.g. videos).
+function toLarkProxyUrl(fileToken: string): string {
+  return `${WEB_APP_URL}/api/lark/image?file_token=${encodeURIComponent(fileToken)}`;
 }
 
-export function getLarkAttachmentUrl(url: string): string {
-  return toLarkProxyUrl(url);
+export function getLarkAttachmentUrl(fileToken: string): string {
+  return toLarkProxyUrl(fileToken);
 }
 
-// Videos are uploaded via /drive/v1/files/upload_all (not attached to any
-// Bitable record), so they carry only a file_token — no ready-made url like
-// Bitable-synced property images. Must download via the Drive Files API
-// (/drive/v1/files/:token/download), not the Bitable Media API
-// (/drive/v1/medias/:token/download), which 403s for record-less tokens.
 export function getLarkVideoUrl(attachment: ILarkAttachment): string {
-  const rawUrl = attachment.url || `${LARK_BASE_URL}/drive/v1/files/${attachment.file_token}/download`;
-  return toLarkProxyUrl(rawUrl);
+  return toLarkProxyUrl(attachment.file_token);
 }
 
 export function getLarkPropertyImageUrls(p: ILarkProperty): string[] {
   return (p.tai_len_hinh_anh_cua_bds ?? [])
-    .filter((img) => !img?.type?.startsWith("video/"))
-    .map((img) => toLarkProxyUrl(img.url));
+    .filter((img) => !!img?.file_token && !img?.type?.startsWith("video/"))
+    .map((img) => toLarkProxyUrl(img.file_token));
 }
 
 export function getLarkPropertyFirstImage(p: ILarkProperty): string {
@@ -302,8 +302,10 @@ export async function getVideos(): Promise<IVideo[]> {
 export type MediaItem = { type: "image" | "video"; url: string };
 
 export function getLarkPropertyMedia(p: ILarkProperty): MediaItem[] {
-  return (p.tai_len_hinh_anh_cua_bds ?? []).map((img) => ({
-    type: img?.type?.startsWith("video/") ? "video" : "image",
-    url: toLarkProxyUrl(img.url),
-  }));
+  return (p.tai_len_hinh_anh_cua_bds ?? [])
+    .filter((img) => !!img?.file_token)
+    .map((img) => ({
+      type: img?.type?.startsWith("video/") ? "video" : "image",
+      url: toLarkProxyUrl(img.file_token),
+    }));
 }
