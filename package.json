@@ -21,6 +21,7 @@
     "react-router-dom": "^6.23.1",
     "zmp-sdk": "^3.0.9",
     "zmp-ui": "^1.11.14",
+    "zmp-vite-plugin": "^1.1.6",
     "zustand": "^4.5.2"
   },
   "devDependencies": {

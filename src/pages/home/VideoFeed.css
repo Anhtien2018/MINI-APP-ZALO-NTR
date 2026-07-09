@@ -10,10 +10,10 @@
 /* ── TikTok-style snap-scroll feed ──────────────────────── */
 .vfeed-feed {
   position: absolute;
-  top: 0;
+  top: calc(env(safe-area-inset-top, 0px));
   left: 0;
   right: 0;
-  bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(52px + env(safe-area-inset-bottom, 0px));
   overflow-y: scroll;
   scroll-snap-type: y mandatory;
   -webkit-overflow-scrolling: touch;
@@ -108,7 +108,8 @@ img.vfeed-item__video {
 /* ── Sound toggle ────────────────────────────────────────── */
 .vfeed-item__sound {
   position: absolute;
-  top: calc(env(safe-area-inset-top, 0px) + 14px);
+  /* Feed đã đẩy xuống dưới topbar → không cộng safe-area nữa (tránh double) */
+  top: 14px;
   right: 12px;
   z-index: 6;
   width: 38px;
@@ -233,7 +234,7 @@ img.vfeed-item__video {
 }
 
 .vfeed-icon--heart-active {
-  filter: brightness(0) saturate(100%) invert(21%) sepia(90%) saturate(4738%) hue-rotate(348deg);
+  filter: brightness(0) invert(1);
 }
 
 .vfeed-icon--zalo {

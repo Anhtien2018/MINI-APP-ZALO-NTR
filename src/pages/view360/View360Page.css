@@ -10,10 +10,10 @@
 /* ── TikTok-style snap-scroll feed ──────────────────────── */
 .view360-feed {
   position: absolute;
-  top: 0;
+  top: calc(env(safe-area-inset-top, 0px));
   left: 0;
   right: 0;
-  bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(52px + env(safe-area-inset-bottom, 0px));
   overflow-y: scroll;
   scroll-snap-type: y mandatory;
   -webkit-overflow-scrolling: touch;
@@ -89,6 +89,139 @@
   letter-spacing: 0.5px;
 }
 
+/* ── Left-edge swipe zone + animated hint ─────────────────── */
+/* Dải mép trái nằm TRÊN iframe (z-index 2 > iframe 1) để bắt cú vuốt dọc đổi
+   tour — iframe 360 nuốt touch nên nếu không có dải này user không cuộn feed
+   được. touch-action: pan-y để cú vuốt dọc truyền xuống scroller .view360-feed
+   (cuộn snap sang tour khác), phần màn còn lại vẫn xoay 360 bình thường. */
+.feed-item__swipe-zone {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 62px;
+  z-index: 2;
+  touch-action: pan-y;
+  /* Affordance mờ nhẹ để vẫn thấy có vùng vuốt kể cả khi hint đã ẩn */
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.16), transparent);
+}
+
+.feed-item__swipe-hint {
+  /* --dir: -1 = gợi ý vuốt LÊN (item thường); +1 = vuốt XUỐNG (item cuối) */
+  --dir: -1;
+  position: absolute;
+  left: 8px;
+  top: 40%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  padding: 13px 11px 11px;
+  border-radius: 18px;
+  background: rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(5px);
+  pointer-events: none; /* thuần trang trí — vùng zone phía dưới bắt touch */
+  animation: swipeHintIn 0.4s ease both;
+}
+
+/* Item cuối feed: đảo chiều — chevron quay xuống + bàn tay nhấp xuống */
+.feed-item__swipe-hint--reverse {
+  --dir: 1;
+}
+.feed-item__swipe-hint--reverse .feed-item__swipe-chevrons {
+  transform: rotate(180deg);
+}
+
+@keyframes swipeHintIn {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Hai chevron trôi nối tiếp — hiệu ứng "vuốt" (container xoay 180° khi đảo chiều) */
+.feed-item__swipe-chevrons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.feed-item__swipe-chevrons svg {
+  width: 20px;
+  height: 20px;
+  opacity: 0;
+  animation: swipeChevron 1.6s ease-in-out infinite;
+}
+
+.feed-item__swipe-chevrons svg:nth-child(1) {
+  animation-delay: 0s;
+}
+.feed-item__swipe-chevrons svg:nth-child(2) {
+  margin-top: -9px;
+  animation-delay: 0.2s;
+}
+
+@keyframes swipeChevron {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+/* Bàn tay nhấp nhô như đang vuốt — chiều theo --dir, quãng đi dài hơn cho rõ */
+.feed-item__swipe-hand {
+  width: 32px;
+  height: 32px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+  animation: swipeHand 1.6s ease-in-out infinite;
+}
+
+@keyframes swipeHand {
+  0% {
+    transform: translateY(calc(-8px * var(--dir)));
+  }
+  40% {
+    transform: translateY(calc(11px * var(--dir)));
+  }
+  100% {
+    transform: translateY(calc(-8px * var(--dir)));
+  }
+}
+
+.feed-item__swipe-label {
+  max-width: 80px;
+  margin-top: 5px;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+/* Tôn trọng người dùng tắt hiệu ứng chuyển động */
+@media (prefers-reduced-motion: reduce) {
+  .feed-item__swipe-chevrons svg,
+  .feed-item__swipe-hand,
+  .feed-item__swipe-hint {
+    animation: none;
+  }
+  .feed-item__swipe-chevrons svg {
+    opacity: 0.9;
+  }
+}
+
 /* ── Right-side action buttons ───────────────────────────── */
 .v360-actions {
   position: absolute;
@@ -123,14 +256,30 @@
 
 /* wiggle animation — rung 0.6s đầu, nghỉ phần còn lại của chu kỳ 3s */
 @keyframes wiggle {
-  0%   { transform: rotate(0deg); }
-  4%   { transform: rotate(-14deg); }
-  8%   { transform: rotate(12deg); }
-  12%  { transform: rotate(-10deg); }
-  16%  { transform: rotate(8deg); }
-  20%  { transform: rotate(-4deg); }
-  24%  { transform: rotate(0deg); }
-  100% { transform: rotate(0deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  4% {
+    transform: rotate(-14deg);
+  }
+  8% {
+    transform: rotate(12deg);
+  }
+  12% {
+    transform: rotate(-10deg);
+  }
+  16% {
+    transform: rotate(8deg);
+  }
+  20% {
+    transform: rotate(-4deg);
+  }
+  24% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
 }
 
 .v360-action-btn--wiggle img {
@@ -138,11 +287,21 @@
   animation-delay: var(--wiggle-delay, 0s);
 }
 
-.v360-action-btn--wiggle:nth-child(1) img { --wiggle-delay: 0s; }
-.v360-action-btn--wiggle:nth-child(2) img { --wiggle-delay: 0.3s; }
-.v360-action-btn--wiggle:nth-child(3) img { --wiggle-delay: 0.6s; }
-.v360-action-btn--wiggle:nth-child(4) img { --wiggle-delay: 0.9s; }
-.v360-action-btn--wiggle:nth-child(5) img { --wiggle-delay: 1.2s; }
+.v360-action-btn--wiggle:nth-child(1) img {
+  --wiggle-delay: 0s;
+}
+.v360-action-btn--wiggle:nth-child(2) img {
+  --wiggle-delay: 0.3s;
+}
+.v360-action-btn--wiggle:nth-child(3) img {
+  --wiggle-delay: 0.6s;
+}
+.v360-action-btn--wiggle:nth-child(4) img {
+  --wiggle-delay: 0.9s;
+}
+.v360-action-btn--wiggle:nth-child(5) img {
+  --wiggle-delay: 1.2s;
+}
 
 /* icons white */
 .v360-icon {

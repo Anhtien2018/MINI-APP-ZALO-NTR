@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, forwardRef } from "react";
+import React, { useState, useEffect, useLayoutEffect, useMemo, useRef, forwardRef } from "react";
 import { useNavigate } from "react-router-dom";
 import iconHeart from "@/assets/icons/social/heart.svg";
 import iconComment from "@/assets/icons/social/comment.svg";
@@ -6,6 +6,7 @@ import iconPhone from "@/assets/icons/social/phone.svg";
 import iconShare from "@/assets/icons/social/share.svg";
 import iconZalo from "@/assets/icons/social/zalo.svg";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { TopSearchBar } from "@/components/search-bar/TopSearchBar";
 import { useWebConfig } from "@/hooks/useConfigQueries";
 import { useLarkPropertiesView360 } from "@/hooks/useListingsQueries";
 import {
@@ -14,10 +15,12 @@ import {
   formatLarkPrice,
   generatePropertySlug,
 } from "@/services/api";
-import { useFavoritesStore } from "@/store";
+import { useFavoritesStore, useView360Store } from "@/store";
+import { preloadImages } from "@/lib/mediaPreload";
 import type { ILarkProperty } from "@/types";
 import { ROUTES, WEB_APP_URL } from "@/constants";
 import "./View360Page.css";
+import { PageLayout } from "@/components/layout/PageLayout";
 
 /* ── Action buttons ────────────────────────────────────── */
 
@@ -45,7 +48,10 @@ function ActionButtons({ property }: { property: ILarkProperty }) {
   return (
     <div className="v360-actions">
       {/* Tim */}
-      <button className="v360-action-btn v360-action-btn--wiggle" onClick={() => (isFav ? removeFav(property.id) : addFav(property.id))}>
+      <button
+        className="v360-action-btn v360-action-btn--wiggle"
+        onClick={() => (isFav ? removeFav(property.id) : addFav(property.id))}
+      >
         <img
           src={iconHeart}
           width={30}
@@ -57,7 +63,10 @@ function ActionButtons({ property }: { property: ILarkProperty }) {
       </button>
 
       {/* Bình luận */}
-      <button className="v360-action-btn v360-action-btn--wiggle" onClick={() => phone && window.open(`tel:${phone}`, "_self")}>
+      <button
+        className="v360-action-btn v360-action-btn--wiggle"
+        onClick={() => phone && window.open(`tel:${phone}`, "_self")}
+      >
         <img src={iconComment} width={30} height={30} className="v360-icon" alt="Bình luận" />
         <span>Bình luận</span>
       </button>
@@ -69,13 +78,19 @@ function ActionButtons({ property }: { property: ILarkProperty }) {
       </button>
 
       {/* Gọi ngay */}
-      <button className="v360-action-btn v360-action-btn--wiggle" onClick={() => phone && window.open(`tel:${phone}`, "_self")}>
+      <button
+        className="v360-action-btn v360-action-btn--wiggle"
+        onClick={() => phone && window.open(`tel:${phone}`, "_self")}
+      >
         <img src={iconPhone} width={30} height={30} className="v360-icon" alt="Gọi ngay" />
         <span>Gọi ngay</span>
       </button>
 
       {/* Zalo */}
-      <button className="v360-action-btn v360-action-btn--wiggle" onClick={() => zalo && window.open(`https://zalo.me/${zalo}`, "_blank")}>
+      <button
+        className="v360-action-btn v360-action-btn--wiggle"
+        onClick={() => zalo && window.open(`https://zalo.me/${zalo}`, "_blank")}
+      >
         <img src={iconZalo} width={32} height={32} className="v360-icon--zalo" alt="Zalo" />
         <span>Zalo</span>
       </button>
@@ -85,13 +100,7 @@ function ActionButtons({ property }: { property: ILarkProperty }) {
 
 /* ── Bottom property card ──────────────────────────────── */
 
-function PropertyCard({
-  property,
-  onBook,
-}: {
-  property: ILarkProperty;
-  onBook: () => void;
-}) {
+function PropertyCard({ property, onBook }: { property: ILarkProperty; onBook: () => void }) {
   const navigate = useNavigate();
   const image = getLarkPropertyFirstImage(property);
   const isRental = (property.loai_hinh_kinh_doanh_bat_dong_san_dich_vu?.name ?? "")
@@ -129,10 +138,20 @@ function PropertyCard({
         )}
         <button
           className="v360-card__book"
-          onClick={(e) => { e.stopPropagation(); onBook(); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onBook();
+          }}
         >
           Đặt ngay
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+          <svg
+            width="13"
+            height="13"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+          >
             <polyline points="9 18 15 12 9 6" />
           </svg>
         </button>
@@ -146,64 +165,110 @@ function PropertyCard({
 interface FeedItemProps {
   property: ILarkProperty;
   active: boolean;
+  showHint: boolean;
+  // Item cuối cùng của feed → đảo chiều gợi ý (vuốt xuống để quay lại).
+  hintReverse: boolean;
 }
 
-const FeedItem = forwardRef<HTMLDivElement, FeedItemProps>(({ property, active }, ref) => {
-  const { data: webConfig } = useWebConfig();
-  const agentInfo = webConfig?.agent_info ?? null;
-  const phone = agentInfo?.phone ?? property.so_dien_thoai_chu_nha ?? "";
-  const image = getLarkPropertyFirstImage(property);
+const FeedItem = forwardRef<HTMLDivElement, FeedItemProps>(
+  ({ property, active, showHint, hintReverse }, ref) => {
+    const { data: webConfig } = useWebConfig();
+    const agentInfo = webConfig?.agent_info ?? null;
+    const phone = agentInfo?.phone ?? property.so_dien_thoai_chu_nha ?? "";
+    const image = getLarkPropertyFirstImage(property);
 
-  return (
-    <div className="feed-item" ref={ref}>
-      {/* 360 iframe – only rendered when this item is snapped into view */}
-      {active && property.link_3d ? (
-        <iframe
-          src={property.link_3d}
-          className="feed-item__frame"
-          allowFullScreen
-          title={property.tieu_de}
-        />
-      ) : (
-        /* Thumbnail shown while scrolling / before snap */
-        <div className="feed-item__thumb">
-          {image ? (
-            <img src={image} alt={property.tieu_de} className="feed-item__thumb-img" />
-          ) : (
-            <div className="feed-item__thumb-placeholder" />
-          )}
-          <div className="feed-item__gradient" />
-          {/* Badge shown on inactive items so user knows it's 360 */}
-          {!active && (
-            <div className="feed-item__badge">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" stroke="#fff" strokeWidth="1.8" />
-                <ellipse cx="12" cy="12" rx="4" ry="10" stroke="#fff" strokeWidth="1.8" />
-                <line x1="2" y1="12" x2="22" y2="12" stroke="#fff" strokeWidth="1.8" />
-              </svg>
-              <span>360°</span>
+    return (
+      <div className="feed-item" ref={ref}>
+        {/* 360 iframe – only rendered when this item is snapped into view */}
+        {active && property.link_3d ? (
+          <>
+            <iframe
+              src={property.link_3d}
+              className="feed-item__frame"
+              allowFullScreen
+              title={property.tieu_de}
+            />
+            {/* Dải vuốt mép trái: nằm TRÊN iframe (iframe nuốt touch nên không
+              vuốt đổi tour được) nhưng vẫn để cuộn feed đi qua → user vuốt dọc
+              ở đây là chuyển tour, phần còn lại vẫn xoay được 360. */}
+            <div className="feed-item__swipe-zone" aria-hidden>
+              {showHint && (
+                <div
+                  className={`feed-item__swipe-hint${hintReverse ? " feed-item__swipe-hint--reverse" : ""}`}
+                >
+                  <div className="feed-item__swipe-chevrons">
+                    <svg viewBox="0 0 24 24" fill="none">
+                      <polyline
+                        points="6 15 12 9 18 15"
+                        stroke="#fff"
+                        strokeWidth="2.4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                    <svg viewBox="0 0 24 24" fill="none">
+                      <polyline
+                        points="6 15 12 9 18 15"
+                        stroke="#fff"
+                        strokeWidth="2.4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                  <svg className="feed-item__swipe-hand" viewBox="0 0 24 24" fill="#fff">
+                    <path d="M11 2a1.5 1.5 0 0 1 1.5 1.5V11h.5V9a1.4 1.4 0 0 1 2.8 0v2h.5v-1.2a1.35 1.35 0 0 1 2.7 0V11h.5v-.4a1.3 1.3 0 0 1 2.5.5V16a6 6 0 0 1-6 6h-2.2a5.6 5.6 0 0 1-4-1.7l-3.7-3.8a1.45 1.45 0 0 1 2-2.1l1.6 1.4V3.5A1.5 1.5 0 0 1 11 2z" />
+                  </svg>
+                  <span className="feed-item__swipe-label">Vuốt tiếp tại đây</span>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      )}
+          </>
+        ) : (
+          /* Thumbnail shown while scrolling / before snap */
+          <div className="feed-item__thumb">
+            {image ? (
+              <img src={image} alt={property.tieu_de} className="feed-item__thumb-img" />
+            ) : (
+              <div className="feed-item__thumb-placeholder" />
+            )}
+            <div className="feed-item__gradient" />
+            {/* Badge shown on inactive items so user knows it's 360 */}
+            {!active && (
+              <div className="feed-item__badge">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="#fff" strokeWidth="1.8" />
+                  <ellipse cx="12" cy="12" rx="4" ry="10" stroke="#fff" strokeWidth="1.8" />
+                  <line x1="2" y1="12" x2="22" y2="12" stroke="#fff" strokeWidth="1.8" />
+                </svg>
+                <span>360°</span>
+              </div>
+            )}
+          </div>
+        )}
 
-      <ActionButtons property={property} />
+        <ActionButtons property={property} />
 
-      <PropertyCard
-        property={property}
-        onBook={() => phone && window.open(`tel:${phone}`, "_self")}
-      />
-    </div>
-  );
-});
+        <PropertyCard
+          property={property}
+          onBook={() => phone && window.open(`tel:${phone}`, "_self")}
+        />
+      </div>
+    );
+  },
+);
 FeedItem.displayName = "FeedItem";
 
 /* ── Main page ─────────────────────────────────────────── */
 
 export function View360Page() {
   const { data: webConfig } = useWebConfig();
-  const [activeIndex, setActiveIndex] = useState(0);
+  // Khởi tạo từ store để quay lại tab 360 là đứng đúng item đang xem dở
+  // (danh sách do react-query cache cả phiên). Đọc 1 lần bằng getState thay vì
+  // subscribe để không double-render theo store.
+  const [activeIndex, setActiveIndex] = useState(() => useView360Store.getState().activeIndex);
   const feedRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number | null>(null);
 
   const statusActive = webConfig?.status_properties?.active ?? undefined;
 
@@ -215,8 +280,34 @@ export function View360Page() {
     fetchNextPage,
   } = useLarkPropertiesView360(statusActive);
 
-  const properties = data?.pages.flatMap((p) => p.data) ?? [];
+  // flatMap tạo mảng mới mỗi render — memo theo `data` để các effect preload/
+  // restore bên dưới chỉ chạy khi dữ liệu thật sự đổi (mirror VideoFeed).
+  const properties = useMemo(() => data?.pages.flatMap((p) => p.data) ?? [], [data]);
   const total = data?.pages[0]?.total ?? 0;
+
+  // Khôi phục vị trí scroll đã lưu — chạy 1 lần ngay khi danh sách render xong
+  // (layout effect để nhảy thẳng tới vị trí, không nháy từ item đầu). Clamp
+  // phòng khi danh sách đổi làm index cũ vượt biên (mirror VideoFeed).
+  const restoredRef = useRef(false);
+  useLayoutEffect(() => {
+    if (restoredRef.current || properties.length === 0) return;
+    restoredRef.current = true;
+    const el = feedRef.current;
+    const saved = Math.min(useView360Store.getState().activeIndex, properties.length - 1);
+    if (!el || saved <= 0) return;
+    el.scrollTop = saved * el.clientHeight;
+    setActiveIndex(saved);
+  }, [properties.length]);
+
+  // Preload ảnh đại diện của item lân cận (kế trên + kế dưới) để lướt tới là
+  // có thumbnail sẵn, không thấy màn đen chờ ảnh trước khi iframe 360 nạp.
+  useEffect(() => {
+    if (properties.length === 0) return;
+    const imgs = [properties[activeIndex + 1], properties[activeIndex - 1]]
+      .filter((p): p is ILarkProperty => !!p)
+      .map((p) => getLarkPropertyFirstImage(p));
+    preloadImages(imgs);
+  }, [properties, activeIndex]);
 
   /* Infinite scroll trigger at midpoint */
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -238,16 +329,29 @@ export function View360Page() {
 
   const midpointIndex = Math.max(0, Math.floor(properties.length / 2) - 1);
 
-  /* Track which item is snapped into view */
+  // Scroll bắn nhiều lần/frame khi vuốt nhanh — gom về tối đa 1 lần/frame
+  // thay vì tính lại + re-render cả list mỗi tick (mirror VideoFeed).
   const handleScroll = () => {
-    const el = feedRef.current;
-    if (!el) return;
-    const index = Math.round(el.scrollTop / el.clientHeight);
-    setActiveIndex(index);
+    if (rafRef.current != null) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null;
+      const el = feedRef.current;
+      if (!el) return;
+      const index = Math.round(el.scrollTop / el.clientHeight);
+      setActiveIndex(index);
+      // Lưu vị trí ra store (ngoài React render) để quay lại là đứng đúng item.
+      useView360Store.getState().setActiveIndex(index);
+    });
   };
 
+  useEffect(() => {
+    return () => {
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
+
   return (
-    <div className="view360-root">
+    <PageLayout>
       <div className="view360-feed" ref={feedRef} onScroll={handleScroll}>
         {loading ? (
           <div className="view360-spinner-wrap">
@@ -282,6 +386,9 @@ export function View360Page() {
               key={p.id}
               property={p}
               active={i === activeIndex}
+              showHint={i === activeIndex}
+              // Item cuối đã tải và không còn trang sau → đảo chiều gợi ý.
+              hintReverse={i === properties.length - 1 && !hasMore}
               ref={i === midpointIndex ? midpointRef : undefined}
             />
           ))
@@ -297,8 +404,6 @@ export function View360Page() {
           <div className="view360-end">Đã xem hết {total} tour ảo</div>
         )}
       </div>
-
-      <BottomNav />
-    </div>
+    </PageLayout>
   );
 }

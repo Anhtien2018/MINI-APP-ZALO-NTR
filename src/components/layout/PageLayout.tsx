@@ -1,12 +1,12 @@
 import React, { useLayoutEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
+import { TopSearchBar } from "@/components/search-bar/TopSearchBar";
 import { BottomNav } from "./BottomNav";
 import "./PageLayout.css";
 
 interface PageLayoutProps {
   children: React.ReactNode;
   hideBottomNav?: boolean;
-  headerTitle?: string;
   onBack?: () => void;
 }
 
@@ -18,12 +18,7 @@ interface PageLayoutProps {
 // the top, while returning to a previous screen resumes where it left off.
 const scrollPositions = new Map<string, number>();
 
-export function PageLayout({
-  children,
-  hideBottomNav = false,
-  headerTitle,
-  onBack,
-}: PageLayoutProps) {
+export function PageLayout({ children, hideBottomNav = false, onBack }: PageLayoutProps) {
   const location = useLocation();
   const mainRef = useRef<HTMLElement>(null);
 
@@ -39,29 +34,17 @@ export function PageLayout({
     return () => el.removeEventListener("scroll", handleScroll);
   }, [location.key]);
 
+  const hideSearchBar =
+    location.pathname === "/map" ||
+    location.pathname === "/search" ||
+    location.pathname === "/360" ||
+    location.pathname === "/";
+
   return (
-    <div className="page-layout">
-      {headerTitle && (
-        <header className="page-header">
-          {onBack && (
-            <button className="page-header__back" onClick={onBack}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M19 12H5M12 5l-7 7 7 7"
-                  stroke="#111"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </button>
-          )}
-          <span className="page-header__title">{headerTitle}</span>
-        </header>
-      )}
-      <main
-        ref={mainRef}
-        className={`page-main${hideBottomNav ? " page-main--no-nav" : ""}`}
-      >
+    <div className={`page-layout${hideSearchBar ? " page-layout--no-topbar" : ""}`}>
+      {!hideSearchBar && <TopSearchBar onBack={onBack} />}
+
+      <main ref={mainRef} className={`page-main${hideBottomNav ? " page-main--no-nav" : ""}`}>
         {children}
       </main>
       {!hideBottomNav && <BottomNav />}

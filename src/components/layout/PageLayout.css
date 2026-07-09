@@ -3,39 +3,13 @@
   flex-direction: column;
   height: 100%;
   background: #fff;
+  box-sizing: border-box;
+  /* Chừa đúng chiều cao của page-topbar (fixed) để content bắt đầu ngay dưới. */
+  padding-top: calc(env(safe-area-inset-top, 0px) + 45px);
 }
 
-.page-header {
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  height: 52px;
-  padding: 0 16px;
-  background: #fff;
-  border-bottom: 1px solid #e5e7eb;
-  gap: 8px;
-}
-
-.page-header__back {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border: none;
-  background: none;
-  cursor: pointer;
-  border-radius: 50%;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.page-header__title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #111;
-  flex: 1;
+.page-layout--no-topbar {
+  padding-top: 0;
 }
 
 .page-main {

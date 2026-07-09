@@ -1,7 +1,6 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { SearchBar } from "@/components/search-bar/SearchBar";
 import { Banner } from "@/components/banner/Banner";
 import { SectionHeader } from "@/components/section-header/SectionHeader";
 import { PropertyCard } from "@/components/property-card/PropertyCard";
@@ -45,7 +44,6 @@ export function ListingsPage() {
 
   return (
     <PageLayout>
-      <SearchBar />
       <Banner />
 
       <div className="listing-sections">

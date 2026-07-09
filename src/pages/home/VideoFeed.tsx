@@ -1,8 +1,12 @@
-import React, { useRef, useState, forwardRef, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
-import { BottomNav } from "@/components/layout/BottomNav";
+import iconComment from "@/assets/icons/social/comment.svg";
+import iconHeart from "@/assets/icons/social/heart.svg";
+import iconPhone from "@/assets/icons/social/phone.svg";
+import iconShare from "@/assets/icons/social/share.svg";
+import iconZalo from "@/assets/icons/social/zalo.svg";
+import { PageLayout } from "@/components/layout/PageLayout";
+import { ROUTES, WEB_APP_URL } from "@/constants";
 import { useVideos, useWebConfig } from "@/hooks/useConfigQueries";
-import { useFavoritesStore, useVideoFeedStore } from "@/store";
+import { preloadImages, preloadVideo, releaseWarmVideos } from "@/lib/mediaPreload";
 import {
   formatLarkPrice,
   generatePropertySlug,
@@ -10,14 +14,10 @@ import {
   getLarkPropertyLocation,
   getLarkVideoUrl,
 } from "@/services/api";
-import { preloadImages, preloadVideo, releaseWarmVideos } from "@/lib/mediaPreload";
+import { useFavoritesStore, useVideoFeedStore } from "@/store";
 import type { IVideo, IVideoProperty } from "@/types";
-import { ROUTES, WEB_APP_URL } from "@/constants";
-import iconHeart from "@/assets/icons/social/heart.svg";
-import iconComment from "@/assets/icons/social/comment.svg";
-import iconPhone from "@/assets/icons/social/phone.svg";
-import iconShare from "@/assets/icons/social/share.svg";
-import iconZalo from "@/assets/icons/social/zalo.svg";
+import React, { forwardRef, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./VideoFeed.css";
 
 // Property's first photo, used as <video poster> so the screen never goes
@@ -73,7 +73,7 @@ function ActionButtons({ property, active }: { property: IVideoProperty | null; 
 
       <button
         className={`vfeed-action-btn${wiggleClass}`}
-        onClick={() => phone && window.open(`tel:${phone}`, "_self")}
+        onClick={() => phone && window.open(`sms:${phone}`, "_self")}
       >
         <img src={iconComment} width={30} height={30} className="vfeed-icon" alt="Bình luận" />
         <span>Bình luận</span>
@@ -295,7 +295,12 @@ const FeedItem = forwardRef<HTMLDivElement, FeedItemProps>(({ video, active, pre
         <div className="vfeed-item__error" onClick={retry}>
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
             <circle cx="12" cy="12" r="10" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" />
-            <path d="M12 8v5M12 16h.01" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round" />
+            <path
+              d="M12 8v5M12 16h.01"
+              stroke="rgba(255,255,255,0.5)"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+            />
           </svg>
           <p>Không tải được video</p>
           <span>Chạm để thử lại</span>
@@ -311,9 +316,7 @@ const FeedItem = forwardRef<HTMLDivElement, FeedItemProps>(({ video, active, pre
           poster (pointer-events none nên không nuốt tap); không có poster
           mới dùng bản nền đặc. */}
       {mountVideo && !hasError && (buffering || (!ready && !posterUrl)) && (
-        <div
-          className={`vfeed-item__skeleton${posterUrl ? "" : " vfeed-item__skeleton--solid"}`}
-        />
+        <div className={`vfeed-item__skeleton${posterUrl ? "" : " vfeed-item__skeleton--solid"}`} />
       )}
 
       {/* Play icon overlay — chỉ còn xuất hiện khi người dùng CHỦ ĐỘNG
@@ -355,22 +358,14 @@ FeedItem.displayName = "FeedItem";
 /* ── Main feed ─────────────────────────────────────────────── */
 
 export function VideoFeed() {
-  const {
-    data,
-    isLoading,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useVideos();
+  const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useVideos();
   // flatMap tạo mảng mới mỗi render — memo theo `data` để effect preload
   // bên dưới chỉ chạy khi dữ liệu/vị trí thật sự đổi.
   const videos = useMemo(() => data?.pages.flatMap((p) => p.data), [data]);
   // Khởi tạo từ store để quay lại Trang chủ là đứng đúng video đang xem dở
   // (danh sách video do react-query cache cả phiên — xem useVideos); đọc 1
   // lần bằng getState thay vì subscribe để không double-render theo store.
-  const [activeIndex, setActiveIndex] = useState(
-    () => useVideoFeedStore.getState().activeIndex,
-  );
+  const [activeIndex, setActiveIndex] = useState(() => useVideoFeedStore.getState().activeIndex);
   const feedRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
 
@@ -382,10 +377,7 @@ export function VideoFeed() {
     if (restoredRef.current || !videos || videos.length === 0) return;
     restoredRef.current = true;
     const el = feedRef.current;
-    const saved = Math.min(
-      useVideoFeedStore.getState().activeIndex,
-      videos.length - 1,
-    );
+    const saved = Math.min(useVideoFeedStore.getState().activeIndex, videos.length - 1);
     if (!el || saved <= 0) return;
     el.scrollTop = saved * el.clientHeight;
     setActiveIndex(saved);
@@ -429,12 +421,7 @@ export function VideoFeed() {
 
       // Load the next page once the user is within 3 items of the end,
       // so scrolling never outruns the data.
-      if (
-        videos &&
-        hasNextPage &&
-        !isFetchingNextPage &&
-        index >= videos.length - 3
-      ) {
+      if (videos && hasNextPage && !isFetchingNextPage && index >= videos.length - 3) {
         void fetchNextPage();
       }
     });
@@ -447,7 +434,7 @@ export function VideoFeed() {
   }, []);
 
   return (
-    <div className="vfeed-root">
+    <PageLayout>
       <div className="vfeed-feed" ref={feedRef} onScroll={handleScroll}>
         {isLoading ? (
           <div className="vfeed-item">
@@ -473,14 +460,10 @@ export function VideoFeed() {
           videos.map((v, i) => {
             const distance = Math.abs(i - activeIndex);
             const preload: Preload = distance === 0 ? "auto" : distance === 1 ? "metadata" : "none";
-            return (
-              <FeedItem key={v.id} video={v} active={i === activeIndex} preload={preload} />
-            );
+            return <FeedItem key={v.id} video={v} active={i === activeIndex} preload={preload} />;
           })
         )}
       </div>
-
-      <BottomNav />
-    </div>
+    </PageLayout>
   );
 }

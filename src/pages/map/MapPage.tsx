@@ -204,7 +204,7 @@ export function MapPage() {
         </div>
       </div>
 
-      <FilterModal open={advancedOpen} onClose={() => setAdvancedOpen(false)} />
+      {/* <FilterModal open={advancedOpen} onClose={() => setAdvancedOpen(false)} /> */}
     </PageLayout>
   );
 }

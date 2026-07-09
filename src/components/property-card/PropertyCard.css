@@ -58,7 +58,9 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.18);
+  /* Nền trắng + tim xanh #228b22 như FavoriteButton web (nút card) */
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.15);
   border: none;
   display: flex;
   align-items: center;

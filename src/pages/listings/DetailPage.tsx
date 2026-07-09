@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { SearchBar } from "@/components/search-bar/SearchBar";
 import { PropertyCard } from "@/components/property-card/PropertyCard";
 import {
   getLarkPropertyMedia,
@@ -12,10 +11,11 @@ import {
   type MediaItem,
 } from "@/services/api";
 import { useWebConfig } from "@/hooks/useConfigQueries";
+import { useFavoritesStore } from "@/store";
 import { preloadImages } from "@/lib/mediaPreload";
 import { usePropertyDetail, useRelatedProperties } from "@/hooks/useListingsQueries";
 import type { ILarkProperty } from "@/types";
-import { COLORS, API_URL } from "@/constants";
+import { API_URL } from "@/constants";
 import { GoongMap } from "@/components/goong-map/GoongMap";
 import "./DetailPage.css";
 
@@ -34,6 +34,10 @@ const AMENITY_TABS: { key: AmenityKey; label: string }[] = [
   { key: "interior", label: "Bên trong" },
   { key: "other", label: "Khác" },
 ];
+
+// Tông xanh nhấn của trang detail — đồng bộ CLR.green bên web
+// (propertyDetail/clr.ts). KHÁC teal #00b894 dùng ở card list.
+const DETAIL_ACCENT = "#16a34a";
 
 const NEARBY_CATEGORIES = [
   { label: "Trường học", keyword: "trường học", color: "#3b82f6", Icon: SchoolIcon },
@@ -77,6 +81,10 @@ export function DetailPage() {
   } = useRelatedProperties(property?.id, categoryId, statusActive);
   const related = relatedData?.pages.flatMap((p) => p.data) ?? [];
 
+  const isFav = useFavoritesStore((s) => (property ? s.isFavorite(property.id) : false));
+  const addFav = useFavoritesStore((s) => s.addFavorite);
+  const removeFav = useFavoritesStore((s) => s.removeFavorite);
+
   useEffect(() => {
     if (relatedObserverRef.current) relatedObserverRef.current.disconnect();
     if (!categoryId) return;
@@ -97,7 +105,6 @@ export function DetailPage() {
   if (loading) {
     return (
       <PageLayout hideBottomNav>
-        <SearchBar />
         <DetailSkeleton />
       </PageLayout>
     );
@@ -106,7 +113,6 @@ export function DetailPage() {
   if (!property) {
     return (
       <PageLayout>
-        <SearchBar />
         <div className="detail-not-found">
           <p>Không tìm thấy bất động sản</p>
           <button onClick={() => navigate(-1)}>Quay lại</button>
@@ -153,7 +159,6 @@ export function DetailPage() {
 
   return (
     <PageLayout hideBottomNav>
-      <SearchBar />
 
       {/* Media gallery */}
       <div className="detail-media">
@@ -242,6 +247,22 @@ export function DetailPage() {
               {property.danh_muc_bds.name.toUpperCase()}
             </span>
           )}
+          <button
+            className="detail-fav-btn"
+            onClick={() => (isFav ? removeFav(property.id) : addFav(property.id))}
+            aria-label={isFav ? "Bỏ lưu tin" : "Lưu tin"}
+          >
+            {/* Cả 2 trạng thái đều màu #228b22 như web (FavoriteBorderIcon /
+                FavoriteIcon): chưa lưu = viền xanh, đã lưu = tô đầy xanh. */}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"
+                stroke="#228b22"
+                strokeWidth="2"
+                fill={isFav ? "#228b22" : "none"}
+              />
+            </svg>
+          </button>
         </div>
 
         <h1 className="detail-title">{property.tieu_de}</h1>
@@ -251,7 +272,7 @@ export function DetailPage() {
             width="14"
             height="14"
             viewBox="0 0 24 24"
-            fill={COLORS.teal}
+            fill={DETAIL_ACCENT}
             style={{ flexShrink: 0 }}
           >
             <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
@@ -279,7 +300,7 @@ export function DetailPage() {
             </>
           ) : (
             <div className="detail-map__empty">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill={COLORS.teal}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill={DETAIL_ACCENT}>
                 <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
               </svg>
               <span>{location}</span>
@@ -298,7 +319,11 @@ export function DetailPage() {
           <InfoGridItem
             icon={<HomeWorkIcon />}
             label="Tình trạng"
-            value={property.trang_thai?.name ?? "—"}
+            value={
+              property.tinh_trang_bds?.[0]?.lark_tinh_trang_bds_id?.name ??
+              property.trang_thai?.name ??
+              "—"
+            }
           />
           <InfoGridItem
             icon={<BoltIcon />}
@@ -369,13 +394,14 @@ export function DetailPage() {
         {/* Nearby places */}
         <NearbyPlacesSection cachedPlaces={property.dia_diem_lan_can} />
 
-        {/* Description */}
-        {property.ghi_chu_them && (
+        {/* Mô tả (ghi_chu_them) — ẩn để đồng bộ web (LarkPropertyDetail.tsx
+            hiện đang comment section này). Bật lại cùng lúc với web nếu cần. */}
+        {/* {property.ghi_chu_them && (
           <div className="detail-section">
             <h3 className="detail-section__title">Mô tả</h3>
             <p className="detail-description">{property.ghi_chu_them}</p>
           </div>
-        )}
+        )} */}
 
         {/* Related */}
         {related.length > 0 && (
@@ -750,10 +776,10 @@ const infoIconProps = { width: 18, height: 18, viewBox: "0 0 24 24", fill: "none
 function MoneyIcon() {
   return (
     <svg {...infoIconProps}>
-      <circle cx="12" cy="12" r="9" stroke={COLORS.primary} strokeWidth="1.6" />
+      <circle cx="12" cy="12" r="9" stroke={DETAIL_ACCENT} strokeWidth="1.6" />
       <path
         d="M9.5 9.2a2 2 0 012-1.7h1a2 2 0 010 4h-1a2 2 0 000 4h1a2 2 0 002-1.7"
-        stroke={COLORS.primary}
+        stroke={DETAIL_ACCENT}
         strokeWidth="1.4"
         strokeLinecap="round"
       />
@@ -762,7 +788,7 @@ function MoneyIcon() {
         y1="6.2"
         x2="12"
         y2="7.5"
-        stroke={COLORS.primary}
+        stroke={DETAIL_ACCENT}
         strokeWidth="1.4"
         strokeLinecap="round"
       />
@@ -771,7 +797,7 @@ function MoneyIcon() {
         y1="16.5"
         x2="12"
         y2="17.8"
-        stroke={COLORS.primary}
+        stroke={DETAIL_ACCENT}
         strokeWidth="1.4"
         strokeLinecap="round"
       />
@@ -788,10 +814,10 @@ function AreaIcon() {
         width="17"
         height="17"
         rx="1.5"
-        stroke={COLORS.primary}
+        stroke={DETAIL_ACCENT}
         strokeWidth="1.6"
       />
-      <path d="M3.5 20L20 3.5" stroke={COLORS.primary} strokeWidth="1.2" strokeDasharray="2 2.5" />
+      <path d="M3.5 20L20 3.5" stroke={DETAIL_ACCENT} strokeWidth="1.2" strokeDasharray="2 2.5" />
     </svg>
   );
 }
@@ -801,12 +827,12 @@ function HomeWorkIcon() {
     <svg {...infoIconProps}>
       <path
         d="M3 21V10l6-4 6 4v11"
-        stroke={COLORS.primary}
+        stroke={DETAIL_ACCENT}
         strokeWidth="1.6"
         strokeLinejoin="round"
       />
-      <path d="M15 21V7l6 3v11" stroke={COLORS.primary} strokeWidth="1.6" strokeLinejoin="round" />
-      <line x1="3" y1="21" x2="21" y2="21" stroke={COLORS.primary} strokeWidth="1.6" />
+      <path d="M15 21V7l6 3v11" stroke={DETAIL_ACCENT} strokeWidth="1.6" strokeLinejoin="round" />
+      <line x1="3" y1="21" x2="21" y2="21" stroke={DETAIL_ACCENT} strokeWidth="1.6" />
     </svg>
   );
 }
@@ -816,7 +842,7 @@ function BoltIcon() {
     <svg {...infoIconProps}>
       <path
         d="M13 2L4 14h6l-1 8 9-12h-6l1-8z"
-        stroke={COLORS.primary}
+        stroke={DETAIL_ACCENT}
         strokeWidth="1.5"
         strokeLinejoin="round"
       />
@@ -829,7 +855,7 @@ function WaterIcon() {
     <svg {...infoIconProps}>
       <path
         d="M12 3c3 4 6 7.5 6 11a6 6 0 01-12 0c0-3.5 3-7 6-11z"
-        stroke={COLORS.primary}
+        stroke={DETAIL_ACCENT}
         strokeWidth="1.6"
         strokeLinejoin="round"
       />
@@ -840,10 +866,10 @@ function WaterIcon() {
 function ExploreIcon() {
   return (
     <svg {...infoIconProps}>
-      <circle cx="12" cy="12" r="9" stroke={COLORS.primary} strokeWidth="1.6" />
+      <circle cx="12" cy="12" r="9" stroke={DETAIL_ACCENT} strokeWidth="1.6" />
       <path
         d="M15 9l-2 5-5 2 2-5 5-2z"
-        stroke={COLORS.primary}
+        stroke={DETAIL_ACCENT}
         strokeWidth="1.4"
         strokeLinejoin="round"
       />

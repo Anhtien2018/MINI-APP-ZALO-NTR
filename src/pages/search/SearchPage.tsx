@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { SearchBar } from "@/components/search-bar/SearchBar";
 import { PropertyCard } from "@/components/property-card/PropertyCard";
 import { FilterModal } from "@/components/filter-modal/FilterModal";
 import { QuickFilterBar } from "@/components/quick-filter-bar/QuickFilterBar";
@@ -129,7 +128,6 @@ export function SearchPage() {
 
   return (
     <PageLayout>
-      <SearchBar />
 
       <div className="listings-toolbar">
         <QuickFilterBar />

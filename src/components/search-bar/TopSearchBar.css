@@ -1,0 +1,30 @@
+/* Thanh trắng cố định ở đỉnh: [back] [ô search]. padding-top = safe-area để
+   không chui dưới status bar; padding-right chừa vùng nút ...× native của Zalo. */
+.page-topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  box-sizing: border-box;
+  height: calc(env(safe-area-inset-top, 0px) + 45px);
+  padding: env(safe-area-inset-top, 0px) 10px 0px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+}
+
+.page-topbar__back {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}

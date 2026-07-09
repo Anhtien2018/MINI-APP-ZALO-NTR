@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { ROUTES } from "@/constants";
 import { FavoritesPage } from "@/pages/favorites/FavoritesPage";
 import { HomePage } from "@/pages/home/HomePage";
@@ -75,6 +76,20 @@ function SplashScreen() {
 
 function AppContent() {
   const { isPending } = useConfigBootstrap();
+
+  // Header trắng → status bar + nav bar native cũng trắng, chữ/icon đen.
+  // Dynamic import + try/catch để chạy ngoài Zalo (dev browser) không lỗi.
+  useEffect(() => {
+    import("zmp-sdk/apis")
+      .then((api) => {
+        try {
+          api.setNavigationBarColor({ color: "#FFF", textColor: "black" });
+        } catch {
+          /* no-op ngoài môi trường Zalo */
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   if (isPending) return <SplashScreen />;
 

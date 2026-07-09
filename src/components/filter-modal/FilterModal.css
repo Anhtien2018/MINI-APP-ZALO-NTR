@@ -14,9 +14,11 @@
   background: #fff;
   border-radius: 20px 20px 0 0;
   max-height: 92dvh;
+  min-height: 50dvh;
   display: flex;
   flex-direction: column;
   animation: sheet-up 0.25s ease;
+  padding-bottom: 55px;
 }
 
 @keyframes sheet-up {
@@ -32,14 +34,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 14px;
+  padding: 10px 14px 10px 14px;
   border-bottom: 1px solid #f0f0f0;
   flex-shrink: 0;
 }
 
 .filter-sheet__title {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 16px;
+  font-weight: 600;
   color: #111;
 }
 

@@ -105,3 +105,10 @@ export const useVideoFeedStore = create<VideoFeedState>((set) => ({
   activeIndex: 0,
   setActiveIndex: (activeIndex) => set({ activeIndex }),
 }));
+
+// Vị trí item đang xem dở của feed 360 — nhớ ngoài React render để khi rời
+// sang tab khác rồi quay lại là đứng đúng chỗ (mirror useVideoFeedStore).
+export const useView360Store = create<VideoFeedState>((set) => ({
+  activeIndex: 0,
+  setActiveIndex: (activeIndex) => set({ activeIndex }),
+}));

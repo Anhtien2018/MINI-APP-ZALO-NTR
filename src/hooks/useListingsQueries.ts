@@ -55,6 +55,10 @@ export function useLarkPropertiesView360(statusId: string | undefined) {
       getLarkPropertiesPaginated({ status: statusId, hasLink3d: true, page: pageParam, limit: PAGE_LIMIT }),
     initialPageParam: 1,
     getNextPageParam,
+    // Feed reels: giữ nguyên cache + thứ tự cả phiên (như useVideos) — quay lại
+    // tab 360 là hiện ngay item cũ, không refetch gây reload/nhảy thứ tự.
+    staleTime: Infinity,
+    gcTime: Infinity,
   });
 }
 

@@ -76,6 +76,8 @@ export const LARK_PROPERTY_DETAIL_FIELDS = [
   "nguoi_sale.first_name",
   "nguoi_sale.email",
   "dia_diem_lan_can",
+  "tinh_trang_bds.lark_tinh_trang_bds_id.id",
+  "tinh_trang_bds.lark_tinh_trang_bds_id.name",
   "do_thiet_bi_ban_giao.lark_do_thiet_bi_ban_giao_id.id",
   "do_thiet_bi_ban_giao.lark_do_thiet_bi_ban_giao_id.name",
   "tien_ich_ben_ngoai_cua_san_pham.lark_tien_ich_ben_ngoai_cua__id.id",

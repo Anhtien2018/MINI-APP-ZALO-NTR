@@ -133,6 +133,7 @@ export interface ILarkProperty {
       distanceMeters: number;
     }>
   > | null;
+  tinh_trang_bds: Array<{ lark_tinh_trang_bds_id: ILarkStatusOption }>;
   do_thiet_bi_ban_giao: Array<{ lark_do_thiet_bi_ban_giao_id: ILarkStatusOption }>;
   tien_ich_ben_ngoai_cua_san_pham: Array<{ lark_tien_ich_ben_ngoai_cua__id: ILarkStatusOption }>;
   tien_ich_phong_ngu_phong_chuc_nang_khac: Array<{
