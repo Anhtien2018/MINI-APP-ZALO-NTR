@@ -12,6 +12,7 @@ import {
   type MediaItem,
 } from "@/services/api";
 import { useWebConfig } from "@/hooks/useConfigQueries";
+import { preloadImages } from "@/lib/mediaPreload";
 import { usePropertyDetail, useRelatedProperties } from "@/hooks/useListingsQueries";
 import type { ILarkProperty } from "@/types";
 import { COLORS, API_URL } from "@/constants";
@@ -158,7 +159,14 @@ export function DetailPage() {
       <div className="detail-media">
         {/* Tabs */}
         <div className="detail-media__tabs">
-          {MEDIA_TABS.filter((t) => t.key !== "360" || has3D).map((t) => (
+          {/* Tab chỉ hiện khi có nội dung thật (đồng bộ PropertyGallery web):
+              Video cần >=1 video trong media, 360 cần link3d — không bắt
+              người dùng bấm vào tab trống "Chưa có video". */}
+          {MEDIA_TABS.filter((t) => {
+            if (t.key === "video") return videoMedia.length > 0;
+            if (t.key === "360") return has3D;
+            return true;
+          }).map((t) => (
             <button
               key={t.key}
               className={`detail-media__tab${mediaTab === t.key ? " detail-media__tab--active" : ""}`}
@@ -444,9 +452,11 @@ function MosaicCell({
   return (
     <div className={`gallery-mosaic__cell${className ? ` ${className}` : ""}`} onClick={onClick}>
       {item.type === "video" ? (
-        <video src={item.url} muted preload="metadata" className="gallery-mosaic__media" />
+        <video src={item.thumbUrl} muted preload="metadata" className="gallery-mosaic__media" />
       ) : (
-        <img src={item.url} alt={title} className="gallery-mosaic__media" />
+        // Ô mosaic dùng bản thu nhỏ 480px (~27KB thay vì ~200KB bản gốc);
+        // bản gốc chỉ tải khi mở lightbox — đồng bộ PropertyGallery bên web
+        <img src={item.thumbUrl} alt={title} className="gallery-mosaic__media" />
       )}
       {item.type === "video" && (
         <div className="gallery-mosaic__play">
@@ -569,20 +579,90 @@ function Lightbox({
   onIndexChange: (i: number) => void;
 }) {
   const item = items[index];
+  // Skeleton chờ ảnh GỐC tải xong (mosaic chỉ tải bản 480px nên lần đầu mở
+  // lightbox bản gốc chưa chắc có sẵn) — reset mỗi lần đổi ảnh
+  const [loaded, setLoaded] = useState(false);
+  React.useEffect(() => setLoaded(false), [index]);
+
+  const goPrev = React.useCallback(
+    () => onIndexChange((index - 1 + items.length) % items.length),
+    [index, items.length, onIndexChange],
+  );
+  const goNext = React.useCallback(
+    () => onIndexChange((index + 1) % items.length),
+    [index, items.length, onIndexChange],
+  );
 
   const prev = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onIndexChange((index - 1 + items.length) % items.length);
+    goPrev();
   };
   const next = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onIndexChange((index + 1) % items.length);
+    goNext();
+  };
+
+  // Đang xem ảnh N thì tải trước bản GỐC của N±1 — bấm/vuốt chuyển ảnh hiện
+  // tức thì thay vì chờ tải (preloadImages tự dedupe, đồng bộ web)
+  React.useEffect(() => {
+    if (items.length < 2) return;
+    const neighbors = [
+      items[(index + 1) % items.length],
+      items[(index - 1 + items.length) % items.length],
+    ];
+    preloadImages(neighbors.filter((m) => m?.type === "image").map((m) => m.url));
+  }, [index, items]);
+
+  // Esc/mũi tên — rẻ, hữu ích khi chạy trong browser ngoài Zalo
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") goPrev();
+      else if (e.key === "ArrowRight") goNext();
+      else if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [goPrev, goNext, onClose]);
+
+  // Vuốt ngang trên backdrop để chuyển ảnh; vuốt ngắn/chéo dọc coi như tap
+  // và rơi xuống close-on-backdrop-click (mirror PropertyGallery web)
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const didSwipeRef = useRef(false);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    touchStartRef.current = { x: t.clientX, y: t.clientY };
+    didSwipeRef.current = false;
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    if (!start) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
+    didSwipeRef.current = true;
+    if (dx > 0) goPrev();
+    else goNext();
+  };
+  const handleBackdropClick = () => {
+    if (didSwipeRef.current) {
+      didSwipeRef.current = false;
+      return;
+    }
+    onClose();
   };
 
   if (!item) return null;
 
   return (
-    <div className="lightbox" onClick={onClose}>
+    <div
+      className="lightbox"
+      onClick={handleBackdropClick}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       <button className="lightbox__close" onClick={onClose}>
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
           <path d="M18 6L6 18M6 6l12 12" stroke="white" strokeWidth="2" strokeLinecap="round" />
@@ -608,10 +688,24 @@ function Lightbox({
 
       <div className="lightbox__media" onClick={(e) => e.stopPropagation()}>
         {item.type === "video" ? (
-          <video src={item.url} controls autoPlay className="lightbox__media-item" />
+          <video
+            src={item.url}
+            controls
+            autoPlay
+            playsInline
+            className="lightbox__media-item"
+            onLoadedData={() => setLoaded(true)}
+          />
         ) : (
-          <img src={item.url} alt="" className="lightbox__media-item" />
+          <img
+            key={item.url}
+            src={item.url}
+            alt=""
+            className="lightbox__media-item"
+            onLoad={() => setLoaded(true)}
+          />
         )}
+        {!loaded && <div className="lightbox__loading" />}
       </div>
 
       {items.length > 1 && (

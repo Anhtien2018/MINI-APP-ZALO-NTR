@@ -78,7 +78,7 @@ export function SearchPage() {
     const searchFromUrl = searchParams.get("search") ?? "";
     if (typeFromUrl) setFilter({ transactionType: typeFromUrl });
     if (searchFromUrl) setFilter({ search: searchFromUrl });
-  }, []);
+  }, [searchParams, setFilter]);
 
   const {
     data,

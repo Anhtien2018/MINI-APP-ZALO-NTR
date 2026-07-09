@@ -1,4 +1,4 @@
-import { useQueries, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQueries, useQuery } from "@tanstack/react-query";
 import {
   getWebConfiguration,
   getHomeConfiguration,
@@ -8,13 +8,13 @@ import {
   getDistricts,
   getWards,
   getPriceRanges,
-  getMainDirections,
   getOtherApartmentAmenities,
   getExternalAmenities,
   getBedroomAmenities,
   getVideos,
 } from "@/services/api";
 import { STATIC_QUERY_OPTIONS } from "@/lib/queryClient";
+import { VIDEO_PAGE_LIMIT } from "@/constants";
 
 export const configQueryKeys = {
   webConfig: ["webConfig"] as const,
@@ -25,7 +25,6 @@ export const configQueryKeys = {
   districts: ["districts"] as const,
   wards: ["wards"] as const,
   priceRanges: ["priceRanges"] as const,
-  mainDirections: ["mainDirections"] as const,
   otherApartmentAmenities: ["otherApartmentAmenities"] as const,
   externalAmenities: ["externalAmenities"] as const,
   bedroomAmenities: ["bedroomAmenities"] as const,
@@ -95,14 +94,6 @@ export function usePriceRanges() {
   });
 }
 
-export function useMainDirections() {
-  return useQuery({
-    queryKey: configQueryKeys.mainDirections,
-    queryFn: getMainDirections,
-    ...STATIC_QUERY_OPTIONS,
-  });
-}
-
 export function useOtherApartmentAmenities() {
   return useQuery({
     queryKey: configQueryKeys.otherApartmentAmenities,
@@ -128,10 +119,26 @@ export function useBedroomAmenities() {
 }
 
 export function useVideos() {
-  return useQuery({
-    queryKey: ["videos"],
-    queryFn: getVideos,
+  // Video giờ lọc theo tin active (đồng bộ web) — cần statusId từ webConfig,
+  // đợi webConfig xong mới fetch để khỏi cache nhầm trang không lọc.
+  const { data: webConfig, isFetched } = useWebConfig();
+  const statusId = webConfig?.status_properties?.active ?? null;
+  return useInfiniteQuery({
+    queryKey: ["videos", statusId],
+    queryFn: ({ pageParam }) => getVideos(pageParam, VIDEO_PAGE_LIMIT, statusId),
+    enabled: isFetched,
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => {
+      const loaded = allPages.reduce((sum, p) => sum + p.data.length, 0);
+      return loaded < lastPage.total ? allPages.length + 1 : undefined;
+    },
+    // Cache cả phiên (đặt SAU spread để không bị STATIC_QUERY_OPTIONS đè):
+    // chuyển page rồi quay lại Trang chủ KHÔNG call lại API — kết hợp
+    // useVideoFeedStore nhớ vị trí đang xem. Video mới đăng sẽ xuất hiện ở
+    // lần mở app sau, chấp nhận được với tần suất đăng tin.
     ...STATIC_QUERY_OPTIONS,
+    staleTime: Infinity,
+    gcTime: Infinity,
   });
 }
 
@@ -157,11 +164,6 @@ export function useConfigBootstrap() {
       { queryKey: configQueryKeys.districts, queryFn: getDistricts, ...STATIC_QUERY_OPTIONS },
       { queryKey: configQueryKeys.wards, queryFn: getWards, ...STATIC_QUERY_OPTIONS },
       { queryKey: configQueryKeys.priceRanges, queryFn: getPriceRanges, ...STATIC_QUERY_OPTIONS },
-      {
-        queryKey: configQueryKeys.mainDirections,
-        queryFn: getMainDirections,
-        ...STATIC_QUERY_OPTIONS,
-      },
       {
         queryKey: configQueryKeys.otherApartmentAmenities,
         queryFn: getOtherApartmentAmenities,

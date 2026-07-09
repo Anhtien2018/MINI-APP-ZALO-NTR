@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import type { GoongMap as GoongMapInstance, GoongMarker } from "@goongmaps/goong-js";
-import "@goongmaps/goong-js/dist/goong-js.css";
 import type { ILarkProperty } from "@/types";
 import {
   getLarkPropertyCoordinates,
@@ -13,6 +12,7 @@ import {
 import { GOONG_MAPTILES_KEY, ROUTES } from "@/constants";
 import { GOONG_MAP_STYLE } from "@/constants/goong";
 import { useMapStore } from "@/store";
+import { loadGoongJs } from "@/utils/loadGoongJs";
 import "./GoongMap.css";
 
 const DEFAULT_CENTER = { lat: 16.0544, lng: 108.2022 };
@@ -58,7 +58,7 @@ export function PropertiesGoongMap({ properties }: Props) {
       return coords ? [{ property, coords }] : [];
     });
 
-    import("@goongmaps/goong-js").then(({ default: goongjs }) => {
+    loadGoongJs().then((goongjs) => {
       if (cancelled || !containerRef.current) return;
 
       goongjs.accessToken = GOONG_MAPTILES_KEY;

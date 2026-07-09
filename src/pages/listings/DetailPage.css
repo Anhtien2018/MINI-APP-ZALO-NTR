@@ -231,6 +231,7 @@
 }
 
 .lightbox__media {
+  position: relative;
   width: 92vw;
   height: 75dvh;
   display: flex;
@@ -242,6 +243,27 @@
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+}
+
+/* Skeleton shimmer chờ bản gốc tải xong (mosaic chỉ tải bản thu nhỏ 480px)
+   — cùng ngôn ngữ loading với video feed, không dùng spinner */
+.lightbox__loading {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+  background-size: 200% 100%;
+  animation: lightbox-skeleton-anim 1.4s infinite;
+  border-radius: 8px;
+}
+
+@keyframes lightbox-skeleton-anim {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .detail-info {

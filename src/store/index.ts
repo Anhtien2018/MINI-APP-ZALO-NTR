@@ -90,3 +90,18 @@ export const useFavoritesStore = create<FavoritesState>((set, get) => ({
     set((s) => ({ favorites: s.favorites.filter((f) => f.propertyId !== propertyId) })),
   isFavorite: (propertyId) => get().favorites.some((f) => f.propertyId === propertyId),
 }));
+
+// Vị trí đang xem trong video feed trang chủ — giữ qua chuyển page (mirror
+// useHomeStore bên web giữ cache section trang chủ): quay lại Trang chủ là
+// đứng đúng video cũ thay vì reset về đầu và "load lại" cả feed. Dữ liệu
+// danh sách video do react-query giữ (useVideos, cache cả phiên); store này
+// chỉ cần nhớ vị trí.
+interface VideoFeedState {
+  activeIndex: number;
+  setActiveIndex: (i: number) => void;
+}
+
+export const useVideoFeedStore = create<VideoFeedState>((set) => ({
+  activeIndex: 0,
+  setActiveIndex: (activeIndex) => set({ activeIndex }),
+}));

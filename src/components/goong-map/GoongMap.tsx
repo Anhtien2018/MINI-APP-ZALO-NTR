@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from "react";
 import type { GoongMap as GoongMapInstance, GoongMarker } from "@goongmaps/goong-js";
-import "@goongmaps/goong-js/dist/goong-js.css";
 import { GOONG_MAPTILES_KEY } from "@/constants";
 import { GOONG_MAP_STYLE } from "@/constants/goong";
+import { loadGoongJs } from "@/utils/loadGoongJs";
 import "./GoongMap.css";
 
 interface Props {
@@ -20,7 +20,7 @@ export function GoongMap({ lat, lng }: Props) {
     if (!containerRef.current || !GOONG_MAPTILES_KEY) return;
     let cancelled = false;
 
-    import("@goongmaps/goong-js").then(({ default: goongjs }) => {
+    loadGoongJs().then((goongjs) => {
       if (cancelled || !containerRef.current) return;
 
       goongjs.accessToken = GOONG_MAPTILES_KEY;

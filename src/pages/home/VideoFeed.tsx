@@ -1,14 +1,16 @@
-import React, { useRef, useState, forwardRef } from "react";
+import React, { useRef, useState, forwardRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { useVideos, useWebConfig } from "@/hooks/useConfigQueries";
-import { useFavoritesStore } from "@/store";
+import { useFavoritesStore, useVideoFeedStore } from "@/store";
 import {
   formatLarkPrice,
   generatePropertySlug,
-  getLarkAttachmentUrl,
+  getLarkMediaUrl,
+  getLarkPropertyLocation,
   getLarkVideoUrl,
 } from "@/services/api";
+import { preloadImages, preloadVideo, releaseWarmVideos } from "@/lib/mediaPreload";
 import type { IVideo, IVideoProperty } from "@/types";
 import { ROUTES, WEB_APP_URL } from "@/constants";
 import iconHeart from "@/assets/icons/social/heart.svg";
@@ -22,9 +24,9 @@ import "./VideoFeed.css";
 // black while the actual video data is still loading.
 function getVideoPosterUrl(property: IVideoProperty | null): string | null {
   const thumb = (property?.tai_len_hinh_anh_cua_bds ?? []).find(
-    (img) => !!img?.file_token && !img?.type?.startsWith("video/"),
+    (img) => !!img?.id && !img?.type?.startsWith("video/"),
   );
-  return thumb ? getLarkAttachmentUrl(thumb.file_token) : null;
+  return thumb ? getLarkMediaUrl(thumb) : null;
 }
 
 /* ── Right-side action icon list ──────────────────────────── */
@@ -114,11 +116,8 @@ function VideoPropertyCard({ property }: { property: IVideoProperty | null }) {
   const price =
     formatLarkPrice(property.gia_cho_thue_gia_ban ?? null) +
     (isRental && property.gia_cho_thue_gia_ban ? " /tháng" : "");
-  const location =
-    property.vi_tri?.full_address ??
-    property.duong_khu_dan_cu_neu_khong_co_de_trong?.full_address ??
-    property.dia_chi_cu_the ??
-    "";
+  // Chỉ hiện phường/quận/thành phố — không lộ địa chỉ chính xác (đồng bộ web)
+  const location = getLarkPropertyLocation(property);
   const thumbUrl = getVideoPosterUrl(property);
 
   return (
@@ -176,11 +175,17 @@ interface FeedItemProps {
   preload: Preload;
 }
 
+// Người dùng đã chủ động bật tiếng chưa — nhớ xuyên suốt phiên để video sau
+// thử autoplay CÓ tiếng luôn (iOS chỉ cho phát có tiếng sau khi đã có tương
+// tác; nếu bị policy chặn thì tự rơi về muted).
+const soundPref = { on: false };
+
 const FeedItem = forwardRef<HTMLDivElement, FeedItemProps>(({ video, active, preload }, ref) => {
   const [playing, setPlaying] = useState(false);
   const [buffering, setBuffering] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [ready, setReady] = useState(false);
+  const [muted, setMuted] = useState(!soundPref.on);
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoUrl = video.video ? getLarkVideoUrl(video.video) : null;
   const posterUrl = getVideoPosterUrl(video.lark_property ?? null);
@@ -192,8 +197,27 @@ const FeedItem = forwardRef<HTMLDivElement, FeedItemProps>(({ video, active, pre
   // else falls back to the poster image, which has no such limit.
   const mountVideo = preload !== "none";
 
-  // Playback never starts on its own — only pause/rewind when the item
-  // scrolls out of view, so returning to it always shows the play button.
+  // Autoplay kiểu TikTok: lướt tới item nào là phát luôn item đó. iOS chỉ
+  // cho autoplay khi muted+playsinline → mặc định phát không tiếng; nếu
+  // người dùng đã bật tiếng (soundPref) thì thử phát có tiếng trước, bị
+  // policy chặn mới rơi về muted. play() cũng chính là cú hích buộc iOS
+  // bắt đầu tải dữ liệu (WebKit bỏ qua preload).
+  React.useEffect(() => {
+    if (!active || !videoUrl || hasError) return;
+    const el = videoRef.current;
+    if (!el) return;
+    el.preload = "auto";
+    setBuffering(true);
+    el.muted = !soundPref.on;
+    setMuted(el.muted);
+    el.play().catch(() => {
+      el.muted = true;
+      setMuted(true);
+      el.play().catch(() => setBuffering(false));
+    });
+  }, [active, videoUrl, hasError]);
+
+  // Pause/rewind khi item rời khỏi màn hình — quay lại sẽ autoplay từ đầu.
   React.useEffect(() => {
     if (active) return;
     const el = videoRef.current;
@@ -219,14 +243,31 @@ const FeedItem = forwardRef<HTMLDivElement, FeedItemProps>(({ video, active, pre
     // play()/pause() can race (e.g. tap then immediately swipe away) —
     // an interrupted play() request rejects with AbortError, which is
     // harmless here but would otherwise surface as an unhandled rejection.
-    if (el.paused) el.play().catch(() => {});
-    else el.pause();
+    if (el.paused) {
+      // iOS WebKit hầu như không preload dữ liệu video — trước cú tap đầu
+      // tiên el có thể chưa có byte nào (ready=false). Bật spinner ngay để
+      // người dùng biết đang buffer thay vì tưởng app treo.
+      if (!ready) setBuffering(true);
+      el.play().catch(() => {});
+    } else {
+      el.pause();
+    }
   };
 
   const retry = () => {
     setHasError(false);
     setReady(false);
     videoRef.current?.load();
+  };
+
+  const toggleMute = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const el = videoRef.current;
+    if (!el) return;
+    const nextMuted = !el.muted;
+    el.muted = nextMuted;
+    soundPref.on = !nextMuted;
+    setMuted(nextMuted);
   };
 
   return (
@@ -238,6 +279,7 @@ const FeedItem = forwardRef<HTMLDivElement, FeedItemProps>(({ video, active, pre
           poster={posterUrl ?? undefined}
           className="vfeed-item__video"
           playsInline
+          muted={muted}
           preload={preload}
           loop
           onClick={togglePlay}
@@ -264,13 +306,19 @@ const FeedItem = forwardRef<HTMLDivElement, FeedItemProps>(({ video, active, pre
         <div className="vfeed-item__placeholder" />
       )}
 
-      {/* Skeleton shimmer — shown until the first frame is actually decoded */}
-      {mountVideo && !hasError && !ready && (
-        <div className="vfeed-item__skeleton" />
+      {/* Skeleton shimmer — indicator loading duy nhất của feed (không dùng
+          spinner). Có poster thì dùng bản sheen trong suốt quét ngang ĐÈ lên
+          poster (pointer-events none nên không nuốt tap); không có poster
+          mới dùng bản nền đặc. */}
+      {mountVideo && !hasError && (buffering || (!ready && !posterUrl)) && (
+        <div
+          className={`vfeed-item__skeleton${posterUrl ? "" : " vfeed-item__skeleton--solid"}`}
+        />
       )}
 
-      {/* Play icon overlay — shown once loaded and whenever paused */}
-      {mountVideo && !hasError && ready && !playing && (
+      {/* Play icon overlay — chỉ còn xuất hiện khi người dùng CHỦ ĐỘNG
+          pause (autoplay lo phần phát); không đợi ready để luôn tap được. */}
+      {mountVideo && !hasError && !playing && !buffering && (
         <div className="vfeed-item__play-overlay" onClick={togglePlay}>
           <svg width="64" height="64" viewBox="0 0 24 24">
             <circle cx="12" cy="12" r="12" fill="rgba(0,0,0,0.4)" />
@@ -279,11 +327,20 @@ const FeedItem = forwardRef<HTMLDivElement, FeedItemProps>(({ video, active, pre
         </div>
       )}
 
-      {/* Buffering spinner — shown while playback is stalled on data */}
-      {playing && buffering && (
-        <div className="vfeed-item__buffering">
-          <div className="vfeed-spinner" />
-        </div>
+      {/* Bật/tắt tiếng — autoplay bắt buộc khởi đầu muted (policy iOS),
+          user bật tiếng 1 lần thì các video sau tự phát có tiếng luôn */}
+      {mountVideo && !hasError && (
+        <button className="vfeed-item__sound" onClick={toggleMute}>
+          {muted ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff">
+              <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.796 8.796 0 0021 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.99 8.99 0 003.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
+            </svg>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff">
+              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+            </svg>
+          )}
+        </button>
       )}
 
       <div className="vfeed-item__gradient" />
@@ -298,10 +355,62 @@ FeedItem.displayName = "FeedItem";
 /* ── Main feed ─────────────────────────────────────────────── */
 
 export function VideoFeed() {
-  const { data: videos, isLoading } = useVideos();
-  const [activeIndex, setActiveIndex] = useState(0);
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useVideos();
+  // flatMap tạo mảng mới mỗi render — memo theo `data` để effect preload
+  // bên dưới chỉ chạy khi dữ liệu/vị trí thật sự đổi.
+  const videos = useMemo(() => data?.pages.flatMap((p) => p.data), [data]);
+  // Khởi tạo từ store để quay lại Trang chủ là đứng đúng video đang xem dở
+  // (danh sách video do react-query cache cả phiên — xem useVideos); đọc 1
+  // lần bằng getState thay vì subscribe để không double-render theo store.
+  const [activeIndex, setActiveIndex] = useState(
+    () => useVideoFeedStore.getState().activeIndex,
+  );
   const feedRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number | null>(null);
+
+  // Khôi phục vị trí scroll đã lưu — chạy 1 lần ngay khi danh sách render
+  // xong (layout effect để nhảy thẳng tới vị trí, không thấy màn nháy từ
+  // video đầu). Clamp phòng khi danh sách đổi làm index cũ vượt biên.
+  const restoredRef = useRef(false);
+  React.useLayoutEffect(() => {
+    if (restoredRef.current || !videos || videos.length === 0) return;
+    restoredRef.current = true;
+    const el = feedRef.current;
+    const saved = Math.min(
+      useVideoFeedStore.getState().activeIndex,
+      videos.length - 1,
+    );
+    if (!el || saved <= 0) return;
+    el.scrollTop = saved * el.clientHeight;
+    setActiveIndex(saved);
+  }, [videos]);
+
+  // Preload trước media của các item lân cận để lướt tới là có sẵn:
+  // - poster (±2 item): ảnh nhẹ, nằm sẵn trong cache → không còn màn đen
+  //   chờ ảnh lúc vừa lướt tới.
+  // - video kế tiếp (hướng cuộn chủ đạo là xuống): warm buffer qua HTTP
+  //   cache, item sau mount <video> là phát được gần như ngay.
+  React.useEffect(() => {
+    if (!videos || videos.length === 0) return;
+    const posters: Array<string | null> = [];
+    for (const i of [activeIndex + 1, activeIndex + 2, activeIndex - 1]) {
+      const v = videos[i];
+      if (v) posters.push(getVideoPosterUrl(v.lark_property ?? null));
+    }
+    preloadImages(posters);
+
+    const next = videos[activeIndex + 1];
+    if (next?.video) preloadVideo(getLarkVideoUrl(next.video));
+  }, [videos, activeIndex]);
+
+  // Rời màn feed thì nhả các video đang warm — trả băng thông/bộ nhớ
+  React.useEffect(() => releaseWarmVideos, []);
 
   // Native scroll events fire many times per frame during a fast swipe —
   // batch them to at most once per animation frame instead of recomputing
@@ -312,7 +421,22 @@ export function VideoFeed() {
       rafRef.current = null;
       const el = feedRef.current;
       if (!el) return;
-      setActiveIndex(Math.round(el.scrollTop / el.clientHeight));
+      const index = Math.round(el.scrollTop / el.clientHeight);
+      setActiveIndex(index);
+      // Lưu vị trí vào store (ngoài React render) — quay lại trang là đứng
+      // đúng video này. Gọi qua getState để component không subscribe store.
+      useVideoFeedStore.getState().setActiveIndex(index);
+
+      // Load the next page once the user is within 3 items of the end,
+      // so scrolling never outruns the data.
+      if (
+        videos &&
+        hasNextPage &&
+        !isFetchingNextPage &&
+        index >= videos.length - 3
+      ) {
+        void fetchNextPage();
+      }
     });
   };
 
@@ -326,8 +450,8 @@ export function VideoFeed() {
     <div className="vfeed-root">
       <div className="vfeed-feed" ref={feedRef} onScroll={handleScroll}>
         {isLoading ? (
-          <div className="vfeed-spinner-wrap">
-            <div className="vfeed-spinner" />
+          <div className="vfeed-item">
+            <div className="vfeed-item__skeleton vfeed-item__skeleton--solid" />
           </div>
         ) : !videos || videos.length === 0 ? (
           <div className="vfeed-empty">

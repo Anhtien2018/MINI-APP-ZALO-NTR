@@ -3,6 +3,9 @@ dist
 dist-ssr
 *.local
 
+# Vendored at build/dev time from node_modules — see vite.config.ts
+public/vendor
+
 .DS_Store
 *.log
 npm-debug.log*

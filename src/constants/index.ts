@@ -1,6 +1,10 @@
 export const API_URL = "https://cms.nguyenthinhreal.org";
 export const WEB_APP_URL = import.meta.env.VITE_WEB_APP_URL as string;
-export const DIRECTUS_TOKEN = import.meta.env.VITE_DIRECTUS_TOKEN as string;
+// Read-only Directus static token (scoped role, safe for a client bundle) —
+// never the admin token, which must stay server-only. Same token/role as the
+// web app's NEXT_PUBLIC_DIRECTUS_PUBLIC_TOKEN.
+export const DIRECTUS_PUBLIC_TOKEN = import.meta.env
+  .VITE_DIRECTUS_PUBLIC_TOKEN as string;
 export const GOONG_MAPTILES_KEY = import.meta.env.VITE_GOONG_MAPTILES_KEY as string;
 export const LARK_BASE_URL = "https://open.larksuite.com/open-apis";
 
@@ -14,7 +18,6 @@ export const ENDPOINTS = {
   district: "/items/lark_quan",
   ward: "/items/lark_phuong",
   priceRange: "/items/lark_khoang_tien",
-  mainDirection: "/items/lark_huong_chinh",
   otherApartmentAmenities: "/items/lark_tien_ich_khac_tien_ich_chung_cu_neu_co",
   externalAmenities: "/items/lark_tien_ich_ben_ngoai_cua_san_pham",
   bedroomAmenities: "/items/lark_tien_ich_phong_ngu_phong_chuc_nang_khac",
@@ -29,6 +32,11 @@ export const LARK_PROPERTY_CARD_FIELDS = [
   "vi_tri",
   "duong_khu_dan_cu_neu_khong_co_de_trong",
   "dia_chi_cu_the",
+  // Vị trí hiển thị công khai = phường/quận/thành phố (xem
+  // getLarkPropertyLocation) — card nào cũng cần 3 field này
+  "phuong.name",
+  "quan.lark_quan_id.name",
+  "tinh_thanh_pho_tw_duoc_phan_cong.name",
   "dien_tich_m2_rong",
   "dien_tich_m2_dai",
   "danh_muc_bds.id",
@@ -98,6 +106,7 @@ export const COLORS = {
 };
 
 export const PAGE_LIMIT = 50;
+export const VIDEO_PAGE_LIMIT = 10;
 export const SEARCH_DEBOUNCE_MS = 400;
 
 export const ROUTES = {

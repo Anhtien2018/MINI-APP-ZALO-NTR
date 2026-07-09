@@ -1,6 +1,21 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
+import fs from "fs";
+
+// goong-js is ~700KB minified. Under this app's forced single-IIFE build
+// (see rollupOptions below), a normal `import("@goongmaps/goong-js")` gets
+// inlined into the main bundle and runs on every app boot, not just when a
+// map actually mounts. Vendoring its UMD build into public/ lets
+// src/utils/loadGoongJs.ts fetch it via a real <script> tag on demand
+// instead, straight from node_modules so it always matches the installed
+// package version.
+const goongJsSrcDir = path.resolve(__dirname, "node_modules/@goongmaps/goong-js/dist");
+const goongJsDestDir = path.resolve(__dirname, "public/vendor");
+fs.mkdirSync(goongJsDestDir, { recursive: true });
+for (const file of ["goong-js.js", "goong-js.css"]) {
+  fs.copyFileSync(path.join(goongJsSrcDir, file), path.join(goongJsDestDir, file));
+}
 
 export default defineConfig({
   plugins: [

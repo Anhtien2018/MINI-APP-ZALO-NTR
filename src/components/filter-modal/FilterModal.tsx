@@ -6,7 +6,6 @@ import {
   useCities,
   useDistricts,
   useExternalAmenities,
-  useMainDirections,
   useOtherApartmentAmenities,
   useBedroomAmenities,
   usePropertyCategories,
@@ -20,10 +19,6 @@ interface FilterModalProps {
   onClose: () => void;
 }
 
-const BEDROOM_OPTIONS = ["1", "2", "3", "4", "5+"];
-
-
-
 export function FilterModal({ open, onClose }: FilterModalProps) {
   const navigate = useNavigate();
   const globalFilter = useListingsStore((s) => s.filter);
@@ -33,21 +28,18 @@ export function FilterModal({ open, onClose }: FilterModalProps) {
   const { data: propertyCategories = [] } = usePropertyCategories();
   const { data: cities = [] } = useCities();
   const { data: districts = [] } = useDistricts();
-  const { data: mainDirections = [] } = useMainDirections();
   const { data: otherApartmentAmenities = [] } = useOtherApartmentAmenities();
   const { data: externalAmenities = [] } = useExternalAmenities();
   const { data: bedroomAmenities = [] } = useBedroomAmenities();
   const { data: priceRanges = [] } = usePriceRanges();
 
   const [draft, setDraft] = useState<ListingsFilter>({ ...globalFilter });
-  const [bedrooms, setBedrooms] = useState<string[]>([]);
   const [amenitiesExpanded, setAmenitiesExpanded] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (open) {
       setDraft({ ...globalFilter });
-      setBedrooms([]);
     }
     // Only re-sync when the modal transitions open — re-running this on every
     // globalFilter change (e.g. the live debounced search below) would wipe
@@ -81,13 +73,8 @@ export function FilterModal({ open, onClose }: FilterModalProps) {
     });
   };
 
-  const toggleBedroom = (v: string) => {
-    setBedrooms((prev) => (prev.includes(v) ? [] : [v]));
-  };
-
   const handleReset = () => {
     setDraft({ ...EMPTY_FILTER });
-    setBedrooms([]);
   };
 
   const handleSearch = () => {
@@ -102,8 +89,7 @@ export function FilterModal({ open, onClose }: FilterModalProps) {
     (draft.city ? 1 : 0) +
     (draft.district ? 1 : 0) +
     (draft.priceRange ? 1 : 0) +
-    (draft.features?.length ?? 0) +
-    bedrooms.length;
+    (draft.features?.length ?? 0);
 
   return (
     <div className="filter-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -272,48 +258,6 @@ export function FilterModal({ open, onClose }: FilterModalProps) {
               <svg className="filter-select__arrow" width="16" height="16" viewBox="0 0 24 24" fill="none">
                 <path d="M6 9l6 6 6-6" stroke="#999" strokeWidth="2" strokeLinecap="round" />
               </svg>
-            </div>
-          </div>
-
-          {/* Hướng */}
-          {mainDirections.length > 0 && (
-            <div className="filter-field">
-              <label className="filter-label">Hướng</label>
-              <div className="filter-select-wrap">
-                <select className="filter-select filter-select--placeholder" defaultValue="">
-                  <option value="">Chọn hướng</option>
-                  {mainDirections.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name}
-                    </option>
-                  ))}
-                </select>
-                <svg
-                  className="filter-select__arrow"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                >
-                  <path d="M6 9l6 6 6-6" stroke="#999" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </div>
-            </div>
-          )}
-
-          {/* Số phòng ngủ */}
-          <div className="filter-field">
-            <label className="filter-label">Số phòng ngủ</label>
-            <div className="filter-bedroom-row">
-              {BEDROOM_OPTIONS.map((v) => (
-                <button
-                  key={v}
-                  className={`filter-bedroom-btn${bedrooms.includes(v) ? " filter-bedroom-btn--active" : ""}`}
-                  onClick={() => toggleBedroom(v)}
-                >
-                  {v}
-                </button>
-              ))}
             </div>
           </div>
 

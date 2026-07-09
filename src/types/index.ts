@@ -83,8 +83,12 @@ export interface ILarkPropertyImage {
   name: string;
   size: number;
   type: string;
-  url: string;
+  /** URL tạm của Lark — pull đã strip trước khi lưu vào Directus, đừng dùng */
+  url?: string;
   tmp_url?: string;
+  /** directus_files.id — có khi file đã được pull lưu thật vào Directus Files */
+  id?: string;
+  filename_download?: string;
 }
 
 export interface ILarkProperty {
@@ -149,8 +153,6 @@ export interface IFavorite {
   savedAt: string;
 }
 
-export type Status = "active" | "in_active";
-
 export interface ILarkAttachment {
   file_token: string;
   name: string;
@@ -158,6 +160,8 @@ export interface ILarkAttachment {
   type: string;
   url?: string;
   tmp_url?: string;
+  /** directus_files.id — có khi video đã được pull enrich vào Directus Files */
+  id?: string;
 }
 
 export interface IVideoProperty {
@@ -168,14 +172,23 @@ export interface IVideoProperty {
   vi_tri?: ILarkViTri | null;
   duong_khu_dan_cu_neu_khong_co_de_trong?: ILarkViTri | null;
   dia_chi_cu_the?: string | null;
+  phuong?: ILarkPhuong | null;
+  quan?: Array<{ lark_quan_id: ILarkDistrict }> | null;
+  tinh_thanh_pho_tw_duoc_phan_cong?: ILarkStatusOption | null;
   tai_len_hinh_anh_cua_bds?: ILarkPropertyImage[] | null;
   loai_hinh_kinh_doanh_bat_dong_san_dich_vu?: ILarkStatusOption | null;
   danh_muc_bds?: ILarkStatusOption | null;
 }
 
+// Video giờ lấy từ CHÍNH property (field `video` trên lark_properties, đồng
+// bộ với web) — getVideos map mỗi row property thành shape này để VideoFeed
+// giữ nguyên. Collection `video` rời không còn được dùng.
 export interface IVideo {
   id: string;
-  status?: Status | null;
   video?: ILarkAttachment | null;
   lark_property?: IVideoProperty | null;
+}
+
+export interface IVideoPropertyRow extends IVideoProperty {
+  video?: ILarkAttachment | null;
 }

@@ -1,12 +1,12 @@
 import axios from "axios";
 import {
   API_URL,
-  WEB_APP_URL,
-  DIRECTUS_TOKEN,
+  DIRECTUS_PUBLIC_TOKEN,
   ENDPOINTS,
   LARK_PROPERTY_CARD_FIELDS,
   LARK_PROPERTY_DETAIL_FIELDS,
   PAGE_LIMIT,
+  VIDEO_PAGE_LIMIT,
 } from "@/constants";
 import type {
   IWebConfiguration,
@@ -17,14 +17,16 @@ import type {
   ILarkPhuong,
   IPropertiesResponse,
   IVideo,
+  IVideoPropertyRow,
   ILarkAttachment,
+  ILarkPropertyImage,
 } from "@/types";
 
 const http = axios.create({
   baseURL: API_URL,
   timeout: 10000,
   headers: {
-    Authorization: `Bearer ${DIRECTUS_TOKEN}`,
+    Authorization: `Bearer ${DIRECTUS_PUBLIC_TOKEN}`,
     "Content-Type": "application/json",
   },
 });
@@ -64,10 +66,6 @@ export async function getWards(): Promise<ILarkPhuong[]> {
 
 export async function getPriceRanges(): Promise<ILarkStatusOption[]> {
   return get<ILarkStatusOption[]>(`${ENDPOINTS.priceRange}?sort=-sort`);
-}
-
-export async function getMainDirections(): Promise<ILarkStatusOption[]> {
-  return get<ILarkStatusOption[]>(`${ENDPOINTS.mainDirection}?sort=sort`);
 }
 
 export async function getOtherApartmentAmenities(): Promise<ILarkStatusOption[]> {
@@ -199,42 +197,71 @@ export async function getRelatedProperties(
   };
 }
 
-// Lark attachment URLs require an Authorization header to download, which
-// <img>/<video> tags can't send — proxy qua Next.js web app, by file_token
-// rather than the stored `url`/`tmp_url`. Those embed a bitablePerm scope
-// tied to a specific table + revision and 403 once the table changes again
-// (e.g. after any edit, or once the record moves between tables) — the web
-// app's proxy re-resolves the correct download URL for the token on each
-// request instead (and falls back to the plain Drive Files API for tokens
-// not attached to any Bitable record, e.g. videos).
-function toLarkProxyUrl(fileToken: string): string {
-  return `${WEB_APP_URL}/api/lark/image?file_token=${encodeURIComponent(fileToken)}`;
+// Media chỉ serve từ Directus Files: `id` (directus_files.id) do lark-sync/
+// pull enrich vào item, /assets/<id> đọc công khai không cần token. Item
+// CHƯA được pull enrich (chưa có `id`) coi như chưa có media — không còn
+// fallback proxy /api/lark/image của web app nữa (mỗi request proxy phải
+// resolve URL tạm của Lark rồi stream lại, chậm và phụ thuộc web app).
+export function getLarkMediaUrl(
+  item: ILarkPropertyImage | ILarkAttachment,
+): string | null {
+  return item.id ? `${API_URL}/assets/${item.id}` : null;
 }
 
-export function getLarkAttachmentUrl(fileToken: string): string {
-  return toLarkProxyUrl(fileToken);
+export function getLarkVideoUrl(attachment: ILarkAttachment): string | null {
+  return getLarkMediaUrl(attachment);
 }
 
-export function getLarkVideoUrl(attachment: ILarkAttachment): string {
-  return toLarkProxyUrl(attachment.file_token);
+// Bản thu nhỏ on-the-fly của Directus (?width&quality) cho ảnh hiển thị cỡ
+// card/mosaic — ảnh gốc sau resize pipeline vẫn ~200KB/tấm, bản 480px chỉ
+// còn ~27KB mà vẫn được Directus cache 30 ngày như bản gốc (mirror
+// getLarkMediaThumbUrl bên web). Video giữ nguyên URL gốc — transform chỉ
+// áp dụng cho ảnh.
+export function getLarkMediaThumbUrl(
+  item: ILarkPropertyImage | ILarkAttachment,
+  width = 480,
+): string | null {
+  if (!item.id) return null;
+  if (item.type?.startsWith("video/")) return getLarkMediaUrl(item);
+  return `${API_URL}/assets/${item.id}?width=${width}&quality=80`;
 }
 
 export function getLarkPropertyImageUrls(p: ILarkProperty): string[] {
   return (p.tai_len_hinh_anh_cua_bds ?? [])
-    .filter((img) => !!img?.file_token && !img?.type?.startsWith("video/"))
-    .map((img) => toLarkProxyUrl(img.file_token));
+    .filter((img) => !!img?.id && !img?.type?.startsWith("video/"))
+    .map((img) => getLarkMediaUrl(img) as string);
 }
 
 export function getLarkPropertyFirstImage(p: ILarkProperty): string {
   return getLarkPropertyImageUrls(p)[0] ?? "";
 }
 
-export function getLarkPropertyLocation(p: ILarkProperty): string {
-  return (
-    p.vi_tri?.full_address ??
-    p.duong_khu_dan_cu_neu_khong_co_de_trong?.full_address ??
-    p.dia_chi_cu_the
-  );
+// `quan` là junction M2M — với fields=quan.lark_quan_id.name thì lark_quan_id
+// là object {name,...} lúc runtime dù type khai báo có thể khác; đọc qua
+// helper để không lệ thuộc type đó (mirror web larkPropertyMapper).
+function relationNameOf(v: unknown): string | null {
+  if (v && typeof v === "object") {
+    const name = (v as { name?: unknown }).name;
+    if (typeof name === "string" && name.trim()) return name;
+  }
+  return null;
+}
+
+// Vị trí hiển thị CÔNG KHAI (card/detail/popup/feed): chỉ phường, quận, thành
+// phố — KHÔNG được rơi về dia_chi_cu_the hay full_address của field Location,
+// cả 2 đều có thể chứa số nhà/vị trí ghim chính xác làm lộ địa chỉ BĐS.
+// Đồng bộ với getLarkPropertyLocation bên web.
+export function getLarkPropertyLocation(p: {
+  phuong?: ILarkPhuong | null;
+  quan?: Array<{ lark_quan_id: ILarkDistrict }> | null;
+  tinh_thanh_pho_tw_duoc_phan_cong?: ILarkStatusOption | null;
+}): string {
+  const parts = [
+    p.phuong?.name,
+    relationNameOf(p.quan?.[0]?.lark_quan_id),
+    p.tinh_thanh_pho_tw_duoc_phan_cong?.name,
+  ].filter((s): s is string => !!s);
+  return parts.join(", ");
 }
 
 export function getLarkPropertyCoordinates(p: ILarkProperty): { lat: number; lng: number } | null {
@@ -275,37 +302,70 @@ export function extractLarkRecordId(slug: string): string {
   return idx === -1 ? slug : slug.slice(idx + 1);
 }
 
-const VIDEO_FIELDS = [
+const VIDEO_FEED_FIELDS = [
   "id",
-  "status",
+  "lark_record_id",
+  "tieu_de",
   "video",
-  "lark_property.id",
-  "lark_property.lark_record_id",
-  "lark_property.tieu_de",
-  "lark_property.gia_cho_thue_gia_ban",
-  "lark_property.vi_tri",
-  "lark_property.duong_khu_dan_cu_neu_khong_co_de_trong",
-  "lark_property.dia_chi_cu_the",
-  "lark_property.tai_len_hinh_anh_cua_bds",
-  "lark_property.loai_hinh_kinh_doanh_bat_dong_san_dich_vu.id",
-  "lark_property.loai_hinh_kinh_doanh_bat_dong_san_dich_vu.name",
-  "lark_property.danh_muc_bds.id",
-  "lark_property.danh_muc_bds.name",
+  "gia_cho_thue_gia_ban",
+  "vi_tri",
+  "duong_khu_dan_cu_neu_khong_co_de_trong",
+  "dia_chi_cu_the",
+  "phuong.name",
+  "quan.lark_quan_id.name",
+  "tinh_thanh_pho_tw_duoc_phan_cong.name",
+  "tai_len_hinh_anh_cua_bds",
+  "loai_hinh_kinh_doanh_bat_dong_san_dich_vu.id",
+  "loai_hinh_kinh_doanh_bat_dong_san_dich_vu.name",
+  "danh_muc_bds.id",
+  "danh_muc_bds.name",
 ].join(",");
 
-export async function getVideos(): Promise<IVideo[]> {
-  return get<IVideo[]>(
-    `${ENDPOINTS.video}?filter[status][_eq]=active&fields=${VIDEO_FIELDS}`,
-  );
+// Video lấy từ CHÍNH property (field `video` trên lark_properties, pull
+// enrich từ Lark kèm resize ~500KB) — đồng bộ với getLarkPropertyVideos bên
+// web, thay cho collection `video` rời trước đây. Chỉ lấy tin active (truyền
+// statusId từ webConfig.status_properties.active). Map mỗi row về shape
+// IVideo cũ để VideoFeed giữ nguyên.
+export async function getVideos(
+  page = 1,
+  limit = VIDEO_PAGE_LIMIT,
+  statusId?: string | null,
+): Promise<{ data: IVideo[]; total: number }> {
+  let url =
+    `${ENDPOINTS.larkProperties}` +
+    `?fields=${VIDEO_FEED_FIELDS}` +
+    `&filter[video][_nnull]=true` +
+    `&sort=-thoi_gian_tao,id` +
+    `&limit=${limit}` +
+    `&page=${page}` +
+    `&meta=filter_count`;
+  if (statusId) url += `&filter[trang_thai][_eq]=${encodeURIComponent(statusId)}`;
+
+  const res = await http.get<{ data: IVideoPropertyRow[]; meta?: { filter_count?: number } }>(url);
+  return {
+    data: res.data.data.map((row) => ({
+      id: row.id,
+      video: row.video ?? null,
+      lark_property: row,
+    })),
+    total: res.data.meta?.filter_count ?? 0,
+  };
 }
 
-export type MediaItem = { type: "image" | "video"; url: string };
+export type MediaItem = {
+  type: "image" | "video";
+  /** Bản gốc — dùng cho lightbox/phóng to */
+  url: string;
+  /** Bản thu nhỏ cho ô mosaic/preview list (mirror MediaItem bên web) */
+  thumbUrl: string;
+};
 
 export function getLarkPropertyMedia(p: ILarkProperty): MediaItem[] {
   return (p.tai_len_hinh_anh_cua_bds ?? [])
-    .filter((img) => !!img?.file_token)
+    .filter((img) => !!img?.id)
     .map((img) => ({
       type: img?.type?.startsWith("video/") ? "video" : "image",
-      url: toLarkProxyUrl(img.file_token),
+      url: getLarkMediaUrl(img) as string,
+      thumbUrl: getLarkMediaThumbUrl(img) as string,
     }));
 }

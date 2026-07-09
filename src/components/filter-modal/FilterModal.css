@@ -235,34 +235,6 @@
   z-index: 4;
 }
 
-/* Bedroom */
-.filter-bedroom-row {
-  display: flex;
-  gap: 8px;
-}
-
-.filter-bedroom-btn {
-  flex: 1;
-  padding: 6px 0;
-  border: 1.5px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #555;
-  background: #fff;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: all 0.15s;
-  font-family: inherit;
-}
-
-.filter-bedroom-btn--active {
-  border-color: #228b22;
-  background: #e8f5e9;
-  color: #228b22;
-  font-weight: 700;
-}
-
 /* Amenities */
 .filter-amenities-header {
   display: flex;
