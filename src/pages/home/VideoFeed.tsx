@@ -449,10 +449,10 @@ export function VideoFeed() {
                 width="18"
                 height="14"
                 rx="2"
-                stroke="rgba(255,255,255,0.3)"
+                stroke="rgba(0,0,0,0.3)"
                 strokeWidth="1.5"
               />
-              <polygon points="10,9 16,12 10,15" fill="rgba(255,255,255,0.3)" />
+              <polygon points="10,9 16,12 10,15" fill="rgba(0,0,0,0.3)" />
             </svg>
             <p>Chưa có video nào</p>
           </div>

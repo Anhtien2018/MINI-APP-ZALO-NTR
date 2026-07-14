@@ -360,13 +360,13 @@ export function View360Page() {
         ) : properties.length === 0 ? (
           <div className="view360-empty">
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="9" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" />
+              <circle cx="12" cy="12" r="9" stroke="rgba(0,0,0,0.3)" strokeWidth="1.5" />
               <ellipse
                 cx="12"
                 cy="12"
                 rx="4"
                 ry="9"
-                stroke="rgba(255,255,255,0.3)"
+                stroke="rgba(0,0,0,0.3)"
                 strokeWidth="1.5"
               />
               <line
@@ -374,7 +374,7 @@ export function View360Page() {
                 y1="12"
                 x2="21"
                 y2="12"
-                stroke="rgba(255,255,255,0.3)"
+                stroke="rgba(0,0,0,0.3)"
                 strokeWidth="1.5"
               />
             </svg>
