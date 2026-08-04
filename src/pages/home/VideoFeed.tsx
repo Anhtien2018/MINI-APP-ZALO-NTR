@@ -1,11 +1,10 @@
-import iconComment from "@/assets/icons/social/comment.svg";
-import iconHeart from "@/assets/icons/social/heart.svg";
 import iconPhone from "@/assets/icons/social/phone.svg";
 import iconShare from "@/assets/icons/social/share.svg";
 import iconZalo from "@/assets/icons/social/zalo.svg";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { ROUTES, WEB_APP_URL } from "@/constants";
 import { useVideos, useWebConfig } from "@/hooks/useConfigQueries";
+import { callPhone, openZalo } from "@/lib/contact";
 import { preloadImages, preloadVideo, releaseWarmVideos } from "@/lib/mediaPreload";
 import {
   formatLarkPrice,
@@ -14,7 +13,7 @@ import {
   getLarkPropertyLocation,
   getLarkVideoUrl,
 } from "@/services/api";
-import { useFavoritesStore, useVideoFeedStore } from "@/store";
+import { useVideoFeedStore } from "@/store";
 import type { IVideo, IVideoProperty } from "@/types";
 import React, { forwardRef, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -33,9 +32,6 @@ function getVideoPosterUrl(property: IVideoProperty | null): string | null {
 
 function ActionButtons({ property, active }: { property: IVideoProperty | null; active: boolean }) {
   const { data: webConfig } = useWebConfig();
-  const isFav = useFavoritesStore((s) => s.isFavorite(property?.id ?? ""));
-  const addFav = useFavoritesStore((s) => s.addFavorite);
-  const removeFav = useFavoritesStore((s) => s.removeFavorite);
 
   const agentInfo = webConfig?.agent_info ?? null;
   const phone = agentInfo?.phone ?? "";
@@ -57,28 +53,6 @@ function ActionButtons({ property, active }: { property: IVideoProperty | null; 
 
   return (
     <div className="vfeed-actions">
-      <button
-        className={`vfeed-action-btn${wiggleClass}`}
-        onClick={() => property && (isFav ? removeFav(property.id) : addFav(property.id))}
-      >
-        <img
-          src={iconHeart}
-          width={30}
-          height={30}
-          className={isFav ? "vfeed-icon vfeed-icon--heart-active" : "vfeed-icon"}
-          alt="Yêu thích"
-        />
-        <span>Yêu thích</span>
-      </button>
-
-      <button
-        className={`vfeed-action-btn${wiggleClass}`}
-        onClick={() => phone && window.open(`sms:${phone}`, "_self")}
-      >
-        <img src={iconComment} width={30} height={30} className="vfeed-icon" alt="Bình luận" />
-        <span>Bình luận</span>
-      </button>
-
       <button className={`vfeed-action-btn${wiggleClass}`} onClick={handleShare}>
         <img src={iconShare} width={30} height={30} className="vfeed-icon" alt="Chia sẻ" />
         <span>Chia sẻ</span>
@@ -86,7 +60,7 @@ function ActionButtons({ property, active }: { property: IVideoProperty | null; 
 
       <button
         className={`vfeed-action-btn${wiggleClass}`}
-        onClick={() => phone && window.open(`tel:${phone}`, "_self")}
+        onClick={() => void callPhone(phone)}
       >
         <img src={iconPhone} width={30} height={30} className="vfeed-icon" alt="Gọi ngay" />
         <span>Gọi ngay</span>
@@ -94,7 +68,7 @@ function ActionButtons({ property, active }: { property: IVideoProperty | null; 
 
       <button
         className={`vfeed-action-btn${wiggleClass}`}
-        onClick={() => zalo && window.open(`https://zalo.me/${zalo}`, "_blank")}
+        onClick={() => void openZalo(zalo)}
       >
         <img src={iconZalo} width={32} height={32} className="vfeed-icon--zalo" alt="Zalo" />
         <span>Zalo</span>

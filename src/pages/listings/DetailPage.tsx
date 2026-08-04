@@ -13,6 +13,7 @@ import {
 import { useWebConfig } from "@/hooks/useConfigQueries";
 import { useFavoritesStore } from "@/store";
 import { preloadImages } from "@/lib/mediaPreload";
+import { callPhone, openZalo } from "@/lib/contact";
 import { usePropertyDetail, useRelatedProperties } from "@/hooks/useListingsQueries";
 import type { ILarkProperty } from "@/types";
 import { API_URL } from "@/constants";
@@ -436,7 +437,11 @@ export function DetailPage() {
           <span className="detail-mobile-bar__name">{agentName}</span>
           <span className="detail-mobile-bar__position">{agentPosition}</span>
         </div>
-        <a href={`tel:${phone}`} className="detail-mobile-bar__btn detail-mobile-bar__btn--call">
+        <button
+          type="button"
+          onClick={() => void callPhone(phone)}
+          className="detail-mobile-bar__btn detail-mobile-bar__btn--call"
+        >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
             <path
               d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.77 11a19.79 19.79 0 01-3.07-8.67A2 2 0 012.68 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.06 6.06l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"
@@ -445,18 +450,17 @@ export function DetailPage() {
             />
           </svg>
           Gọi ngay
-        </a>
-        <a
-          href={`https://zalo.me/${zalo}`}
-          target="_blank"
-          rel="noopener noreferrer"
+        </button>
+        <button
+          type="button"
+          onClick={() => void openZalo(zalo)}
           className="detail-mobile-bar__btn detail-mobile-bar__btn--zalo"
         >
           <svg width="14" height="14" viewBox="0 0 48 48" fill="white">
             <path d="M24 4C13 4 4 13 4 24c0 5.5 2.2 10.5 5.8 14.1L8 44l6.2-1.6C17.3 44 20.5 44.8 24 44.8 35 44.8 44 35.8 44 24S35 4 24 4zm-7.2 28.2H11l7.5-9.5H12V20h10.6l-7.4 9.5h5.6v2.7zm5.5 0h-3V20h3v12.2zm10.5 0h-3v-7.4l-3.4 7.4h-2.8V20h3v7.4l3.4-7.4h2.8v12.2z" />
           </svg>
           Zalo
-        </a>
+        </button>
       </div>
     </PageLayout>
   );

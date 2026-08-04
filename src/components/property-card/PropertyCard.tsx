@@ -11,7 +11,7 @@ import { useWebConfig } from "@/hooks/useConfigQueries";
 import { useFavoritesStore } from "@/store";
 import { ROUTES, COLORS } from "@/constants";
 import "./PropertyCard.css";
-import { openWebview } from "zmp-sdk/apis";
+import { callPhone, openZalo } from "@/lib/contact";
 
 interface PropertyCardProps {
   data: ILarkProperty;
@@ -52,22 +52,14 @@ function PropertyCardComponent(
     else addFav(data.id);
   };
 
-  const handleCall = async (e: React.MouseEvent) => {
+  const handleCall = (e: React.MouseEvent) => {
     e.stopPropagation();
-
-    await openWebview({
-      url: `tel:${phone}`,
-    });
+    void callPhone(phone);
   };
 
-  const handleZalo = async (e: React.MouseEvent) => {
+  const handleZalo = (e: React.MouseEvent) => {
     e.stopPropagation();
-
-    if (!zalo) return;
-
-    await openWebview({
-      url: `https://zalo.me/${zalo}`,
-    });
+    void openZalo(zalo);
   };
 
   const handleCardClick = () => {

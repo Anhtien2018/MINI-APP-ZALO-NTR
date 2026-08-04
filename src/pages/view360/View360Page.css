@@ -97,7 +97,7 @@
 .feed-item__swipe-zone {
   position: absolute;
   left: 0;
-  top: 0;
+  top: 160px;
   bottom: 0;
   width: 62px;
   z-index: 2;

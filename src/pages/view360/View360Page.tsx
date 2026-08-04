@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useMemo, useRef, forwardRef } from "react";
 import { useNavigate } from "react-router-dom";
-import iconHeart from "@/assets/icons/social/heart.svg";
-import iconComment from "@/assets/icons/social/comment.svg";
 import iconPhone from "@/assets/icons/social/phone.svg";
 import iconShare from "@/assets/icons/social/share.svg";
 import iconZalo from "@/assets/icons/social/zalo.svg";
@@ -15,10 +13,11 @@ import {
   formatLarkPrice,
   generatePropertySlug,
 } from "@/services/api";
-import { useFavoritesStore, useView360Store } from "@/store";
+import { useView360Store } from "@/store";
 import { preloadImages } from "@/lib/mediaPreload";
 import type { ILarkProperty } from "@/types";
 import { ROUTES, WEB_APP_URL } from "@/constants";
+import { callPhone, openZalo } from "@/lib/contact";
 import "./View360Page.css";
 import { PageLayout } from "@/components/layout/PageLayout";
 
@@ -26,9 +25,6 @@ import { PageLayout } from "@/components/layout/PageLayout";
 
 function ActionButtons({ property }: { property: ILarkProperty }) {
   const { data: webConfig } = useWebConfig();
-  const isFav = useFavoritesStore((s) => s.isFavorite(property.id));
-  const addFav = useFavoritesStore((s) => s.addFavorite);
-  const removeFav = useFavoritesStore((s) => s.removeFavorite);
 
   const agentInfo = webConfig?.agent_info ?? null;
   const phone = agentInfo?.phone ?? property.so_dien_thoai_chu_nha ?? "";
@@ -47,30 +43,6 @@ function ActionButtons({ property }: { property: ILarkProperty }) {
 
   return (
     <div className="v360-actions">
-      {/* Tim */}
-      <button
-        className="v360-action-btn v360-action-btn--wiggle"
-        onClick={() => (isFav ? removeFav(property.id) : addFav(property.id))}
-      >
-        <img
-          src={iconHeart}
-          width={30}
-          height={30}
-          className={isFav ? "v360-icon v360-icon--heart-active" : "v360-icon"}
-          alt="Yêu thích"
-        />
-        <span>Yêu thích</span>
-      </button>
-
-      {/* Bình luận */}
-      <button
-        className="v360-action-btn v360-action-btn--wiggle"
-        onClick={() => phone && window.open(`tel:${phone}`, "_self")}
-      >
-        <img src={iconComment} width={30} height={30} className="v360-icon" alt="Bình luận" />
-        <span>Bình luận</span>
-      </button>
-
       {/* Chia sẻ */}
       <button className="v360-action-btn v360-action-btn--wiggle" onClick={handleShare}>
         <img src={iconShare} width={30} height={30} className="v360-icon" alt="Chia sẻ" />
@@ -80,7 +52,7 @@ function ActionButtons({ property }: { property: ILarkProperty }) {
       {/* Gọi ngay */}
       <button
         className="v360-action-btn v360-action-btn--wiggle"
-        onClick={() => phone && window.open(`tel:${phone}`, "_self")}
+        onClick={() => void callPhone(phone)}
       >
         <img src={iconPhone} width={30} height={30} className="v360-icon" alt="Gọi ngay" />
         <span>Gọi ngay</span>
@@ -89,7 +61,7 @@ function ActionButtons({ property }: { property: ILarkProperty }) {
       {/* Zalo */}
       <button
         className="v360-action-btn v360-action-btn--wiggle"
-        onClick={() => zalo && window.open(`https://zalo.me/${zalo}`, "_blank")}
+        onClick={() => void openZalo(zalo)}
       >
         <img src={iconZalo} width={32} height={32} className="v360-icon--zalo" alt="Zalo" />
         <span>Zalo</span>
@@ -251,7 +223,7 @@ const FeedItem = forwardRef<HTMLDivElement, FeedItemProps>(
 
         <PropertyCard
           property={property}
-          onBook={() => phone && window.open(`tel:${phone}`, "_self")}
+          onBook={() => void callPhone(phone)}
         />
       </div>
     );

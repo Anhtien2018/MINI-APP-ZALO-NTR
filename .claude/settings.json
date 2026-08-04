@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -n \"tel:\\\\|zalo.me\\\\|href={\\\\`tel\\\\|so_dien_thoai\" src/pages/listings/DetailPage.tsx)",
+      "Bash(grep -rniE \"window.open\\\\\\(\\\\`?\\(tel|sms\\):|openWebview\\\\\\(\\\\{[^}]*tel:|href=\\\\{?\\\\`?tel:\" src --include=\"*.tsx\" --include=\"*.ts\")",
+      "Bash(curl -s \"https://cms.nguyenthinhreal.org/items/web_configuration?access_token=pNC2d2-HRg6gbE--1w5YJNHyKYZ5o1GF\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); a=\\(d.get\\('data'\\) or {}\\).get\\('agent_info'\\); print\\(json.dumps\\(a, ensure_ascii=False, indent=2\\)\\)\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(list\\(d.keys\\(\\)\\)\\)\")",
+      "WebFetch(domain:mini.zalo.me)",
+      "WebFetch(domain:miniapp.zaloplatforms.com)"
+    ]
+  }
+}
