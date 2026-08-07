@@ -1,0 +1,78 @@
+- generic [ref=f4e1456]:
+  - generic [ref=f4e1457]: Bạn tìm kiếm gì....
+  - main [ref=f4e1463]:
+    - generic [ref=f4e1464]:
+      - generic [ref=f4e1465]:
+        - button "Hình" [ref=f4e1466] [cursor=pointer]
+        - button "Video" [ref=f4e1467] [cursor=pointer]
+        - button "360 độ" [ref=f4e1468] [cursor=pointer]
+      - generic [ref=f4e1469]:
+        - img "NHÀ PHỐ MẶT TIỀN HÒA MINH 14" [ref=f4e1471] [cursor=pointer]
+        - img "NHÀ PHỐ MẶT TIỀN HÒA MINH 14" [ref=f4e1473] [cursor=pointer]
+        - img "NHÀ PHỐ MẶT TIỀN HÒA MINH 14" [ref=f4e1475] [cursor=pointer]
+        - img "NHÀ PHỐ MẶT TIỀN HÒA MINH 14" [ref=f4e1477] [cursor=pointer]
+        - generic [ref=f4e1478] [cursor=pointer]:
+          - img "NHÀ PHỐ MẶT TIỀN HÒA MINH 14" [ref=f4e1479]
+          - generic [ref=f4e1480]: +9 ảnh
+    - generic [ref=f4e1486]:
+      - generic [ref=f4e1487]:
+        - generic [ref=f4e1488]: 8.0 tỷ
+        - generic [ref=f4e1489]: CẦN BÁN
+        - generic [ref=f4e1490]: NHÀ PHỐ MẶT TIỀN
+      - heading "NHÀ PHỐ MẶT TIỀN HÒA MINH 14" [level=1] [ref=f4e1491]
+      - paragraph [ref=f4e1492]:
+        - generic [ref=f4e1495]: Hòa Minh, Liên Chiểu, Đà Nẵng
+      - generic [ref=f4e1496] [cursor=pointer]:
+        - generic [ref=f4e1497]:
+          - generic [ref=f4e1498]:
+            - region "Map" [ref=f4e1499]
+            - generic "Map marker" [ref=f4e1500]
+          - link "Goong logo" [ref=f4e1520]:
+            - /url: https://goong.io/
+        - generic: Mở bản đồ
+      - generic [ref=f4e1521]:
+        - generic [ref=f4e1526]:
+          - generic [ref=f4e1527]: Tiền cọc
+          - generic [ref=f4e1528]: Thỏa thuận
+        - generic [ref=f4e1533]:
+          - generic [ref=f4e1534]: Diện tích
+          - generic [ref=f4e1535]: 5 m²
+        - generic [ref=f4e1540]:
+          - generic [ref=f4e1541]: Tình trạng
+          - generic [ref=f4e1542]: Mới xây dựng
+        - generic [ref=f4e1546]:
+          - generic [ref=f4e1547]: Tiền điện
+          - generic [ref=f4e1548]: Thỏa thuận
+        - generic [ref=f4e1552]:
+          - generic [ref=f4e1553]: Tiền nước
+          - generic [ref=f4e1554]: Thỏa thuận
+        - generic [ref=f4e1559]:
+          - generic [ref=f4e1560]: Vị trí
+          - generic [ref=f4e1561]: Mặt tiền đường
+      - generic [ref=f4e1562]:
+        - heading "Tiện ích và công năng" [level=3] [ref=f4e1563]
+        - generic [ref=f4e1564]:
+          - button "Bàn giao" [ref=f4e1565] [cursor=pointer]
+          - button "Bên ngoài" [ref=f4e1566] [cursor=pointer]
+          - button "Bên trong" [ref=f4e1567] [cursor=pointer]
+          - button "Khác" [ref=f4e1568] [cursor=pointer]
+        - generic [ref=f4e1569]:
+          - generic [ref=f4e1570]: Bộ bàn ghế sofa phòng khách
+          - generic [ref=f4e1575]: Kệ tủ trưng bày
+          - generic [ref=f4e1580]: TV trang bị sẵn
+          - generic [ref=f4e1585]: Trang bị sẵn internet
+          - generic [ref=f4e1590]: Trang bị hệ thống điều hòa
+          - generic [ref=f4e1595]: Bếp riêng
+          - generic [ref=f4e1600]: Kệ TV trang bị sẵn
+          - generic [ref=f4e1605]: Bếp riêng
+          - generic [ref=f4e1610]: Nước nóng lạnh tắm giặc
+          - generic [ref=f4e1615]: Bồn rửa chén
+          - generic [ref=f4e1620]: Đèn chiếu sáng (trang trí) phòng khách
+          - generic [ref=f4e1625]: Đèn chiếu sáng bếp
+    - generic [ref=f4e1630]:
+      - img "Bảo Trung" [ref=f4e1632]
+      - generic [ref=f4e1633]:
+        - generic [ref=f4e1634]: Bảo Trung
+        - generic [ref=f4e1635]: Môi giới bất động sản
+      - button "Gọi ngay" [ref=f4e1636] [cursor=pointer]
+      - button "Zalo" [ref=f4e1639] [cursor=pointer]

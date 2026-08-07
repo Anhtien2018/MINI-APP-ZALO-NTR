@@ -7,7 +7,7 @@ import {
   formatLarkPrice,
   generatePropertySlug,
 } from "@/services/api";
-import { useWebConfig } from "@/hooks/useConfigQueries";
+import { useHomeConfig, useWebConfig } from "@/hooks/useConfigQueries";
 import { useFavoritesStore } from "@/store";
 import { ROUTES, COLORS } from "@/constants";
 import "./PropertyCard.css";
@@ -24,6 +24,8 @@ function PropertyCardComponent(
 ) {
   const navigate = useNavigate();
   const { data: webConfig } = useWebConfig();
+  const { data: homeConfig } = useHomeConfig();
+  const showFav = homeConfig?.is_show !== false;
   const isFav = useFavoritesStore((s) => s.isFavorite(data.id));
   const addFav = useFavoritesStore((s) => s.addFavorite);
   const removeFav = useFavoritesStore((s) => s.removeFavorite);
@@ -115,7 +117,7 @@ function PropertyCardComponent(
           ) : (
             <NoImage />
           )}
-          <FavButton />
+          {showFav && <FavButton />}
         </div>
         <div className="property-card__body">
           {badge && <span className="property-card__badge">{badge}</span>}
@@ -143,7 +145,7 @@ function PropertyCardComponent(
         ) : (
           <NoImage />
         )}
-        <FavButton />
+        {showFav && <FavButton />}
       </div>
 
       <div className="property-card__body">

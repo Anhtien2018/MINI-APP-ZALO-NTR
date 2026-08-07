@@ -7,7 +7,11 @@
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); a=\\(d.get\\('data'\\) or {}\\).get\\('agent_info'\\); print\\(json.dumps\\(a, ensure_ascii=False, indent=2\\)\\)\")",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(list\\(d.keys\\(\\)\\)\\)\")",
       "WebFetch(domain:mini.zalo.me)",
-      "WebFetch(domain:miniapp.zaloplatforms.com)"
+      "WebFetch(domain:miniapp.zaloplatforms.com)",
+      "Bash(grep -r \"IHomeConfiguration\" /Users/nguyenbuianhtml.com/Documents/project/MINI-APP-ZALO-NTR/src --include=\"*.ts\" --include=\"*.tsx\" -n)",
+      "Read(//Users/nguyenbuianhtml.com/Documents/project/MINI-APP-ZALO-NTR/**)",
+      "Bash(grep -E \"\\\\.\\(tsx?|jsx?\\)$\")",
+      "mcp__plugin_aiup-vaadin-jooq_playwright__browser_network_request"
     ]
   }
 }

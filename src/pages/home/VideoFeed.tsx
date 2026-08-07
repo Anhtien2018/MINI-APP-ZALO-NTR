@@ -3,7 +3,7 @@ import iconShare from "@/assets/icons/social/share.svg";
 import iconZalo from "@/assets/icons/social/zalo.svg";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { ROUTES, WEB_APP_URL } from "@/constants";
-import { useVideos, useWebConfig } from "@/hooks/useConfigQueries";
+import { useHomeConfig, useVideos, useWebConfig } from "@/hooks/useConfigQueries";
 import { callPhone, openZalo } from "@/lib/contact";
 import { preloadImages, preloadVideo, releaseWarmVideos } from "@/lib/mediaPreload";
 import {
@@ -32,6 +32,8 @@ function getVideoPosterUrl(property: IVideoProperty | null): string | null {
 
 function ActionButtons({ property, active }: { property: IVideoProperty | null; active: boolean }) {
   const { data: webConfig } = useWebConfig();
+  const { data: homeConfig } = useHomeConfig();
+  const showShare = homeConfig?.is_show !== false;
 
   const agentInfo = webConfig?.agent_info ?? null;
   const phone = agentInfo?.phone ?? "";
@@ -53,10 +55,12 @@ function ActionButtons({ property, active }: { property: IVideoProperty | null; 
 
   return (
     <div className="vfeed-actions">
-      <button className={`vfeed-action-btn${wiggleClass}`} onClick={handleShare}>
-        <img src={iconShare} width={30} height={30} className="vfeed-icon" alt="Chia sẻ" />
-        <span>Chia sẻ</span>
-      </button>
+      {showShare && (
+        <button className={`vfeed-action-btn${wiggleClass}`} onClick={handleShare}>
+          <img src={iconShare} width={30} height={30} className="vfeed-icon" alt="Chia sẻ" />
+          <span>Chia sẻ</span>
+        </button>
+      )}
 
       <button
         className={`vfeed-action-btn${wiggleClass}`}

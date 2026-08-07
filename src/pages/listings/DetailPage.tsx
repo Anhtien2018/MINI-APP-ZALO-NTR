@@ -4,13 +4,14 @@ import { PageLayout } from "@/components/layout/PageLayout";
 import { PropertyCard } from "@/components/property-card/PropertyCard";
 import {
   getLarkPropertyMedia,
+  getLarkPropertyFirstImage,
   getLarkPropertyLocation,
   getLarkPropertyCoordinates,
   formatLarkPrice,
   extractLarkRecordId,
   type MediaItem,
 } from "@/services/api";
-import { useWebConfig } from "@/hooks/useConfigQueries";
+import { useHomeConfig, useWebConfig } from "@/hooks/useConfigQueries";
 import { useFavoritesStore } from "@/store";
 import { preloadImages } from "@/lib/mediaPreload";
 import { callPhone, openZalo } from "@/lib/contact";
@@ -51,6 +52,8 @@ export function DetailPage() {
   const { slug = "" } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { data: webConfig } = useWebConfig();
+  const { data: homeConfig } = useHomeConfig();
+  const showFav = homeConfig?.is_show !== false;
 
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
   const [mediaTab, setMediaTab] = useState<MediaTabKey>("image");
@@ -135,6 +138,7 @@ export function DetailPage() {
     (isRental && property.gia_cho_thue_gia_ban ? " / tháng" : "");
 
   const has3D = !!property.link_3d;
+  const coverImageUrl = getLarkPropertyFirstImage(property);
   const area = property.dien_tich_m2_rong ?? property.dien_tich_m2_dai ?? null;
   const coords = getLarkPropertyCoordinates(property);
 
@@ -185,12 +189,25 @@ export function DetailPage() {
 
         {mediaTab === "360" ? (
           has3D ? (
-            <iframe
-              src={property.link_3d!}
-              className="detail-media__360-frame"
-              allowFullScreen
-              title="Tour 360°"
-            />
+            <div className="detail-media__360-cover">
+              {coverImageUrl && (
+                <img src={coverImageUrl} alt={property.tieu_de} className="detail-media__360-img" />
+              )}
+              <div
+                className={`detail-media__360-overlay${coverImageUrl ? "" : " detail-media__360-overlay--plain"}`}
+              >
+                {!coverImageUrl && <View360Icon />}
+                <a
+                  href={property.link_3d!}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="detail-media__360-btn"
+                >
+                  Mở liên kết 360 độ
+                  <OpenInNewIcon />
+                </a>
+              </div>
+            </div>
           ) : (
             <div className="detail-media__empty">Chưa có dữ liệu 360 độ</div>
           )
@@ -248,22 +265,24 @@ export function DetailPage() {
               {property.danh_muc_bds.name.toUpperCase()}
             </span>
           )}
-          <button
-            className="detail-fav-btn"
-            onClick={() => (isFav ? removeFav(property.id) : addFav(property.id))}
-            aria-label={isFav ? "Bỏ lưu tin" : "Lưu tin"}
-          >
-            {/* Cả 2 trạng thái đều màu #228b22 như web (FavoriteBorderIcon /
-                FavoriteIcon): chưa lưu = viền xanh, đã lưu = tô đầy xanh. */}
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"
-                stroke="#228b22"
-                strokeWidth="2"
-                fill={isFav ? "#228b22" : "none"}
-              />
-            </svg>
-          </button>
+          {showFav && (
+            <button
+              className="detail-fav-btn"
+              onClick={() => (isFav ? removeFav(property.id) : addFav(property.id))}
+              aria-label={isFav ? "Bỏ lưu tin" : "Lưu tin"}
+            >
+              {/* Cả 2 trạng thái đều màu #228b22 như web (FavoriteBorderIcon /
+                  FavoriteIcon): chưa lưu = viền xanh, đã lưu = tô đầy xanh. */}
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"
+                  stroke="#228b22"
+                  strokeWidth="2"
+                  fill={isFav ? "#228b22" : "none"}
+                />
+              </svg>
+            </button>
+          )}
         </div>
 
         <h1 className="detail-title">{property.tieu_de}</h1>
@@ -887,6 +906,20 @@ function View360Icon() {
       <circle cx="12" cy="12" r="9" stroke="#9ca3af" strokeWidth="1.5" />
       <ellipse cx="12" cy="12" rx="4" ry="9" stroke="#9ca3af" strokeWidth="1.3" />
       <line x1="3" y1="12" x2="21" y2="12" stroke="#9ca3af" strokeWidth="1.3" />
+    </svg>
+  );
+}
+
+function OpenInNewIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+      <path
+        d="M14 3h7v7m0-7L10 14M19 14v5a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h5"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }

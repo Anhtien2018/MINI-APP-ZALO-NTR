@@ -51,6 +51,7 @@ export interface IHomeConfiguration {
   seo_title: string;
   seo_description: string;
   statistics: { title: string; value: string }[];
+  is_show: boolean;
 }
 
 export interface ILarkStatusOption {

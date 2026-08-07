@@ -5,7 +5,7 @@ import iconShare from "@/assets/icons/social/share.svg";
 import iconZalo from "@/assets/icons/social/zalo.svg";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { TopSearchBar } from "@/components/search-bar/TopSearchBar";
-import { useWebConfig } from "@/hooks/useConfigQueries";
+import { useHomeConfig, useWebConfig } from "@/hooks/useConfigQueries";
 import { useLarkPropertiesView360 } from "@/hooks/useListingsQueries";
 import {
   getLarkPropertyFirstImage,
@@ -25,6 +25,8 @@ import { PageLayout } from "@/components/layout/PageLayout";
 
 function ActionButtons({ property }: { property: ILarkProperty }) {
   const { data: webConfig } = useWebConfig();
+  const { data: homeConfig } = useHomeConfig();
+  const showShare = homeConfig?.is_show !== false;
 
   const agentInfo = webConfig?.agent_info ?? null;
   const phone = agentInfo?.phone ?? property.so_dien_thoai_chu_nha ?? "";
@@ -44,10 +46,12 @@ function ActionButtons({ property }: { property: ILarkProperty }) {
   return (
     <div className="v360-actions">
       {/* Chia sẻ */}
-      <button className="v360-action-btn v360-action-btn--wiggle" onClick={handleShare}>
-        <img src={iconShare} width={30} height={30} className="v360-icon" alt="Chia sẻ" />
-        <span>Chia sẻ</span>
-      </button>
+      {showShare && (
+        <button className="v360-action-btn v360-action-btn--wiggle" onClick={handleShare}>
+          <img src={iconShare} width={30} height={30} className="v360-icon" alt="Chia sẻ" />
+          <span>Chia sẻ</span>
+        </button>
+      )}
 
       {/* Gọi ngay */}
       <button
