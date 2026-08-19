@@ -12,19 +12,32 @@ visible. A clear/X button restores all pins.
 Port this feature to the mini app, matching web behavior 1:1, adapted to the
 mini app's plain SVG/CSS UI (no MUI) and existing goong-js setup.
 
-## Scope difference from web
+## Scope correction
 
-Web's design had to solve grid-pagination vs map-dataset mismatch (map mode
-reused the grid's paginated 50/page results). The mini app doesn't have this
-problem: `MapPage` already fetches the full unpaginated result set via
-`useLarkPropertiesMap` and passes `propertiesWithCoords` to
-`PropertiesGoongMap`. No new fetch/cache/store wiring is needed — this port
-is UI + interaction logic only.
+An earlier version of this spec was written against a stale reference: an
+old design doc from a diverged web branch where lasso was pure client-side
+point-in-polygon filtering of whatever was already loaded. Current
+`PRODUCTION` web behavior is different and more correct — the mini app's
+initial map fetch (`useLarkPropertiesMap`, capped at `limit: 100`, same cap
+as web's `MAP_FETCH_LIMIT`) can't be trusted to contain everything inside an
+arbitrary drawn region, so **drawing a lasso re-queries the backend** with
+the active filters and `limit: -1`, and runs the point-in-polygon test
+against that full set — not just the already-rendered markers. This spec is
+corrected to match that.
+
+Directus has no bbox/geo query support for the map's plain `"lng,lat"`
+string field (not a real geo column), so the polygon test still can't be
+pushed down as a query filter — it runs in-memory over the uncapped fetch
+result, same as web's `fetchAreaListings`. Unlike web (a Next.js app with
+server actions), the mini app already calls Directus directly from the
+browser via `services/api.ts` — so this re-fetch is just another
+`getLarkPropertiesPaginated` call from the client, no new server action
+layer needed.
 
 ## Approach
 
-Direct port of web's custom pointer-capture + ray-casting implementation, no
-new dependency:
+Direct port of web's custom pointer-capture + ray-casting + area re-fetch
+implementation, no new dependency:
 
 - Freehand draw needs manual pointer-event capture regardless of library —
   no existing lib gives freehand drawing out of the box (`mapbox-gl-draw`
@@ -34,6 +47,8 @@ new dependency:
 - Point-in-polygon is a well-understood ~20-line ray-casting function, not
   worth pulling in `@turf/*` for. Freehand-drawn regions are simple
   (non self-intersecting) polygons in practice.
+- Reuses the existing `getLarkPropertiesPaginated` client call with
+  `limit: -1` for the area re-fetch — no new endpoint or service function.
 
 ## Data flow
 
@@ -49,38 +64,62 @@ new dependency:
    `map.unproject()`, closed into a polygon. Bail out (return to `idle`, no
    filtering) if the path's bounding box is smaller than a 24px threshold —
    treats an accidental tap/jitter as a cancel, not a zero-area selection.
-5. Each existing marker's stored coordinates are tested against the polygon
-   with a new pure function `isPointInPolygon` in `src/lib/utils/geometry.ts`
-   (standard ray-casting, planar). Markers outside get
-   `marker.getElement().style.display = "none"`; markers inside are shown.
-   This toggles existing marker DOM nodes directly — it does not touch the
-   `properties` prop, because the map-creation effect in
-   `PropertiesGoongMap` tears down and rebuilds the whole map whenever its
-   `properties` dependency changes; re-running that on every lasso draw
-   would flicker/reset the map.
-6. The closed polygon is also rendered as a persistent GeoJSON
+5. The polygon is rendered immediately as a persistent GeoJSON
    source+fill-layer on the goong-js map itself (not the SVG overlay, which
    is pixel-space and would drift out of registration on pan/zoom).
-   `drawMode` becomes `"active"`; the lasso icon is replaced by a clear/X
-   button in the same spot.
-7. Tapping clear: removes the GeoJSON layer/source, resets every marker's
-   `display` to visible, returns to `drawMode: "idle"`.
-8. `pointercancel` (system-gesture interruption — e.g. app switch) resets
-   draw state and gives map interaction back without applying a polygon.
-9. Filter/property change (`properties` array changes) resets `drawMode` to
-   `"idle"` — the map-rebuild effect already re-creates markers/map on this
-   dependency, so a stale lasso selection would reference removed DOM nodes.
+   `drawMode` becomes `"active"`, the lasso icon is replaced by a clear/X
+   button, and a "Đang lọc khu vực…" loading banner appears.
+6. `getLarkPropertiesPaginated({ ...filter, page: 1, limit: -1 })` re-fetches
+   every property matching the active filters, uncapped. Each result's
+   coordinates are tested against the polygon with a new pure function
+   `isPointInPolygon` in `src/lib/utils/geometry.ts` (standard ray-casting,
+   planar). A request-id counter discards a response that resolves after a
+   newer polygon has already been drawn (fast redraw / redraw-after-error).
+7. Matched properties that already have a marker (part of the initial capped
+   batch) get `marker.getElement().style.display` toggled — visible if
+   matched, hidden otherwise. This toggles existing marker DOM nodes
+   directly rather than touching the `properties` prop, because the
+   map-creation effect in `PropertiesGoongMap` tears down and rebuilds the
+   whole map whenever `properties` changes; re-running that on every lasso
+   draw would flicker/reset the map.
+8. Matched properties with no existing marker (matched-but-never-fetched by
+   the initial capped load) get one built via the same `buildMarker` closure
+   the initial batch uses (factored out, stored in a ref so the drawn-outside
+   handler can reach it), capped at `AREA_RENDER_LIMIT` (100) markers total
+   to bound DOM/marker creation — `matchCount` in the status banner stays
+   the true, uncapped count even when `renderedCount` is capped lower.
+9. On success: banner switches to `"Vùng đã chọn: N tin"` (plus a truncation
+   note if `renderedCount < matchCount`). On fetch failure: polygon layer
+   and marker visibility are rolled back, `drawMode` returns to `"idle"`,
+   banner shows an error message.
+10. Tapping clear: removes the GeoJSON layer/source, removes extra markers,
+    resets every base marker's `display` to visible, returns to
+    `drawMode: "idle"`, clears the banner.
+11. `pointercancel` (system-gesture interruption — e.g. app switch) resets
+    draw state and gives map interaction back without applying a polygon.
+12. Filter/property change (`properties` array changes) resets `drawMode`
+    and the status banner to idle — the map-rebuild effect already
+    re-creates markers/map on this dependency, so a stale lasso selection
+    would reference removed DOM nodes.
 
 ## Components / files touched
 
 - `src/lib/utils/geometry.ts` — new. Pure `isPointInPolygon(point, polygon)`,
   ported unchanged from web.
 - `src/components/goong-map/PropertiesGoongMap.tsx` — add lasso button,
-  draw-mode SVG overlay, marker visibility toggling, polygon layer
-  render/clear. No prop changes.
+  draw-mode SVG overlay, area re-fetch on draw (`onPolygonDrawn`), marker
+  visibility toggling + extra-marker creation for area matches, polygon
+  layer render/clear, status banner. New `filter: IListingsFilter` prop
+  (marker-building logic factored into a `buildMarker` closure, stored in
+  `createMarkerRef`, so both the initial batch and area-matched extras use
+  it identically).
+- `src/pages/map/MapPage.tsx` — the filter object already built for
+  `useLarkPropertiesMap` is hoisted to a local (`mapFilter`) and passed to
+  `PropertiesGoongMap` as the new `filter` prop, unchanged otherwise.
 - `src/components/goong-map/GoongMap.css` — styles for the lasso/clear
-  button (matching existing `.map-search__advanced-btn` look) and the SVG
-  draw overlay.
+  button (matching existing `.map-search__advanced-btn` look), the SVG draw
+  overlay, and the top-center status banner (loading spinner / error /
+  match-count messages).
 - `src/types/goong-js.d.ts` — extend with `GoongMarker.getElement()`,
   `GoongMap.unproject()`, `dragPan`/`touchZoomRotate` enable/disable,
   `addSource`/`addLayer`/`removeLayer`/`removeSource`/`getLayer`/`getSource`,
@@ -90,16 +129,28 @@ new dependency:
 
 - Tap without meaningful drag → cancelled, no filter applied, button stays
   `idle` (lasso icon).
-- Empty polygon (no properties inside) → all markers hidden, clear button
-  still available to undo.
-- Filter/property change while a lasso is active → selection resets
-  (existing map-rebuild effect already remounts everything on `properties`
-  change).
+- Empty polygon (no properties matched) → all markers hidden, clear button
+  still available to undo, banner reads "Vùng đã chọn: 0 tin".
+- Area fetch fails (network/Directus error) → selection rolled back to
+  idle, banner shows an error message instead of leaving a stuck loading
+  state or a polygon with no visible effect.
+- A second lasso drawn before the first's fetch resolves → request-id guard
+  discards the stale response instead of letting it clobber the newer draw.
+- Match count exceeds `AREA_RENDER_LIMIT` (100) → banner reports the true
+  match count alongside how many are actually rendered.
+- Filter/property change while a lasso is active → selection and banner
+  reset (existing map-rebuild effect already remounts everything on
+  `properties` change).
 - No clustering added — same as web, out of scope for this change.
 
 ## Testing
 
-- Unit test `isPointInPolygon` (point inside / outside / on boundary).
-- Manual verification: draw lasso, confirm only in-region markers stay
-  visible, confirm clear restores all, confirm filter change resets
-  selection, confirm marker tap still opens its popup normally.
+- Unit test `isPointInPolygon` (point inside / outside / on boundary) —
+  no test runner is currently configured in this repo, so this is deferred;
+  verified manually instead (see below).
+- Manual verification: draw lasso, confirm loading banner appears then
+  resolves to a match-count banner, confirm only in-region markers stay
+  visible (including ones outside the initial 100-item batch, if
+  reachable), confirm clear restores all and clears the banner, confirm
+  filter change resets selection, confirm marker tap still opens its popup
+  normally, confirm a simulated fetch failure rolls back cleanly.

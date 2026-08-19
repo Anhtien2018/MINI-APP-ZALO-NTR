@@ -22,10 +22,20 @@ declare module "@goongmaps/goong-js" {
     togglePopup(): GoongMarker;
     remove(): GoongMarker;
     on(type: "dragend", listener: () => void): GoongMarker;
+    getElement(): HTMLElement;
   }
 
   export interface GoongLngLatBounds {
     extend(lngLat: [number, number]): GoongLngLatBounds;
+  }
+
+  export interface GoongGeoJSONPolygonFeature {
+    type: "Feature";
+    properties: Record<string, never>;
+    geometry: {
+      type: "Polygon";
+      coordinates: number[][][];
+    };
   }
 
   export interface GoongMap {
@@ -38,6 +48,25 @@ declare module "@goongmaps/goong-js" {
     on(type: "error", listener: (e: { error?: Error }) => void): GoongMap;
     on(type: "moveend", listener: () => void): GoongMap;
     once(type: "idle" | "load", listener: () => void): GoongMap;
+    unproject(point: { x: number; y: number }): GoongLngLat;
+    dragPan: { enable(): void; disable(): void };
+    touchZoomRotate: { enable(): void; disable(): void };
+    addSource(
+      id: string,
+      source: { type: "geojson"; data: GoongGeoJSONPolygonFeature },
+    ): void;
+    addLayer(layer: {
+      id: string;
+      type: "fill";
+      source: string;
+      paint?: { "fill-color"?: string; "fill-opacity"?: number };
+    }): void;
+    removeLayer(id: string): void;
+    removeSource(id: string): void;
+    getLayer(id: string): unknown | undefined;
+    getSource(
+      id: string,
+    ): { setData(data: GoongGeoJSONPolygonFeature): void } | undefined;
   }
 
   export interface GoongMapOptions {

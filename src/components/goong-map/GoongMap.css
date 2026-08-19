@@ -3,6 +3,76 @@
   height: 100%;
 }
 
+.goong-map__wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.goong-map__draw-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.goong-map__lasso-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  color: #333;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.goong-map__lasso-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.goong-map__banner {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100% - 24px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  padding: 8px 14px;
+  font-size: 12.5px;
+  color: #374151;
+}
+
+.goong-map__banner-spinner {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border: 2px solid #e5e7eb;
+  border-top-color: #16a34a;
+  border-radius: 50%;
+  animation: goong-map-spin 0.7s linear infinite;
+}
+
+@keyframes goong-map-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .goong-map__fallback {
   width: 100%;
   height: 100%;

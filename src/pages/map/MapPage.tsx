@@ -51,7 +51,7 @@ export function MapPage() {
   const statusActive = webConfig?.status_properties?.active ?? undefined;
   const districtOptions = filter.city ? districts.filter((d) => d.province_id === filter.city) : [];
 
-  const { data, isFetching } = useLarkPropertiesMap({
+  const mapFilter = {
     status: statusActive,
     transactionType: filter.transactionType || undefined,
     propertyType: filter.propertyType || undefined,
@@ -60,7 +60,8 @@ export function MapPage() {
     search: filter.search || undefined,
     priceRange: filter.priceRange || undefined,
     features: filter.features?.length ? filter.features : undefined,
-  });
+  };
+  const { data, isFetching } = useLarkPropertiesMap(mapFilter);
   const properties = data?.data ?? [];
 
   const propertiesWithCoords = useMemo(
@@ -197,7 +198,7 @@ export function MapPage() {
 
         <div className="map-page__map">
           {!isFetching ? (
-            <PropertiesGoongMap properties={propertiesWithCoords} />
+            <PropertiesGoongMap properties={propertiesWithCoords} filter={mapFilter} />
           ) : (
             <div className="map-page__map-skeleton skeleton-pulse" />
           )}
