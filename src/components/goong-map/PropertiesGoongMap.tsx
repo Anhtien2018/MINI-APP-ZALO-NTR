@@ -476,6 +476,13 @@ export function PropertiesGoongMap({ properties, filter }: Props) {
             />
           </svg>
         )}
+        <span className="goong-map__lasso-label">
+          {drawMode === "active"
+            ? "Xóa vùng"
+            : drawMode === "drawing"
+              ? "Khoanh trên bản đồ…"
+              : "Quét"}
+        </span>
       </button>
 
       {areaStatus.loading ? (

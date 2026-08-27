@@ -18,6 +18,11 @@ for (const file of ["goong-js.js", "goong-js.css"]) {
 }
 
 export default defineConfig({
+  // Zalo Mini App's WebView serves the build from a sandboxed asset path, not
+  // domain root — absolute paths ("/assets/...") resolve against Zalo's own
+  // origin and 404, so the entry script never loads in the real app even
+  // though `zmp start` (served from "/") looks fine in preview.
+  base: "./",
   plugins: [
     react(),
     {

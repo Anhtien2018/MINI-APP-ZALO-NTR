@@ -56,6 +56,7 @@ export function DetailPage() {
   const showFav = homeConfig?.is_show !== false;
 
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+  const [view360Open, setView360Open] = useState(false);
   const [mediaTab, setMediaTab] = useState<MediaTabKey>("image");
   const [amenityTab, setAmenityTab] = useState<AmenityKey | null>(null);
   const relatedObserverRef = useRef<IntersectionObserver | null>(null);
@@ -197,15 +198,13 @@ export function DetailPage() {
                 className={`detail-media__360-overlay${coverImageUrl ? "" : " detail-media__360-overlay--plain"}`}
               >
                 {!coverImageUrl && <View360Icon />}
-                <a
-                  href={property.link_3d!}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  onClick={() => setView360Open(true)}
                   className="detail-media__360-btn"
                 >
                   Mở liên kết 360 độ
                   <OpenInNewIcon />
-                </a>
+                </button>
               </div>
             </div>
           ) : (
@@ -248,6 +247,11 @@ export function DetailPage() {
           onClose={() => setLightboxIdx(null)}
           onIndexChange={setLightboxIdx}
         />
+      )}
+
+      {/* Popup 360 độ — nhúng thẳng iframe, không redirect khỏi app */}
+      {view360Open && property.link_3d && (
+        <View360Modal url={property.link_3d} onClose={() => setView360Open(false)} />
       )}
 
       {/* Info */}
@@ -770,6 +774,47 @@ function Lightbox({
           </svg>
         </button>
       )}
+    </div>
+  );
+}
+
+function View360Modal({ url, onClose }: { url: string; onClose: () => void }) {
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [onClose]);
+
+  return (
+    <div className="view360-modal">
+      <button className="view360-modal__close" onClick={onClose} aria-label="Đóng">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path
+            d="M6 6l12 12M18 6L6 18"
+            stroke="white"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+          />
+        </svg>
+      </button>
+      {!loaded && <div className="view360-modal__loading" />}
+      <iframe
+        src={url}
+        className="view360-modal__frame"
+        title="360 độ"
+        allow="fullscreen; accelerometer; gyroscope; magnetometer; xr-spatial-tracking"
+        allowFullScreen
+        onLoad={() => setLoaded(true)}
+      />
     </div>
   );
 }

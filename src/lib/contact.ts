@@ -17,9 +17,14 @@ function cleanPhone(raw: string | null | undefined): string {
   return (raw ?? "").replace(/[^\d+]/g, "");
 }
 
-// Đang chạy trong app Zalo hay trên trình duyệt dev. import.meta.env.DEV chỉ
-// true khi chạy `zmp start` (dev); bản build lên Zalo là production → false.
-const isDev = Boolean(import.meta.env?.DEV);
+// Đang chạy trong webview Zalo thật hay trình duyệt thường. Không dùng
+// import.meta.env.DEV: flag đó phản ánh build mode (zmp start vs build),
+// không phải môi trường chạy — khi test bằng cách quét QR `zmp start` ngay
+// trong app Zalo, DEV vẫn true dù đang ở trong webview Zalo thật, khiến
+// code rơi vào nhánh tel:/window.open ngay trong Zalo và ném lỗi
+// dispatchMessageFromObjC như mô tả ở trên. Webview Zalo luôn có "Zalo"
+// trong User-Agent, dùng để phân biệt đúng môi trường.
+const isInZaloApp = typeof navigator !== "undefined" && /Zalo/i.test(navigator.userAgent);
 
 async function toast(message: string) {
   try {
@@ -39,7 +44,7 @@ export async function callPhone(phoneRaw: string | null | undefined) {
     await openPhone({ phoneNumber: phone });
   } catch (err) {
     console.warn("[contact] openPhone failed:", err);
-    if (isDev) window.location.href = `tel:${phone}`;
+    if (!isInZaloApp) window.location.href = `tel:${phone}`;
     else await toast(`Không gọi được. Vui lòng gọi trực tiếp: ${phone}`);
   }
 }
@@ -53,7 +58,7 @@ export async function sendSMS(phoneRaw: string | null | undefined, content = "")
     await openSMS({ phoneNumber: phone, content });
   } catch (err) {
     console.warn("[contact] openSMS failed:", err);
-    if (isDev) window.location.href = `sms:${phone}`;
+    if (!isInZaloApp) window.location.href = `sms:${phone}`;
     else await toast(`Không mở được tin nhắn. Số: ${phone}`);
   }
 }
@@ -62,13 +67,21 @@ export async function sendSMS(phoneRaw: string | null | undefined, content = "")
 export async function openZalo(zalo: string | null | undefined) {
   const id = cleanPhone(zalo) || (zalo ?? "").trim();
   if (!id) return;
-  const url = `https://zalo.me/${id}`;
+  await openExternalLink(`https://zalo.me/${id}`, "Không mở được Zalo. Vui lòng thử lại.");
+}
+
+// Mọi link ngoài (360 độ, Zalo…) đều phải qua openWebview — thẻ <a target="_blank">
+// thường bị Zalo chặn vì app không có quyền "mở app ngoài" (xem đầu file).
+export async function openExternalLink(
+  url: string,
+  failMessage = "Không mở được liên kết. Vui lòng thử lại.",
+) {
   try {
     const { openWebview } = await import("zmp-sdk/apis");
-    await openWebview({ url });
+    await openWebview({ url, config: { style: "normal" } });
   } catch (err) {
-    console.warn("[contact] openWebview(zalo) failed:", err);
-    if (isDev) window.open(url, "_blank");
-    else await toast("Không mở được Zalo. Vui lòng thử lại.");
+    console.warn("[contact] openWebview failed:", err);
+    if (!isInZaloApp) window.open(url, "_blank");
+    else await toast(failMessage);
   }
 }

@@ -10,7 +10,13 @@ import { View360Page } from "@/pages/view360/View360Page";
 import { useConfigBootstrap } from "@/hooks/useConfigQueries";
 import { queryClient } from "@/lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
+// ZMPRouter thay BrowserRouter: route trong memory, KHÔNG rewrite window.location.
+// BrowserRouter (không basename) + <Navigate to="/"> làm history.replaceState xoá
+// đoạn "/zapps/{appId}" mà Zalo chèn vào path → zmp-sdk bridge mất appId → mọi
+// API native (openPhone/openWebview/openSMS/setNavigationBarColor) trả lỗi quyền
+// -1403 dù Console đã cấp đủ. Xem: miniapp.zaloplatforms.com .../loi-quyen
+import { ZMPRouter } from "zmp-ui";
 import "./app.css";
 
 const SPLASH_PARTICLES: { size: number; top: string; left: string; delay: number; dur: number }[] =
@@ -110,9 +116,9 @@ function AppContent() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
+      <ZMPRouter>
         <AppContent />
-      </BrowserRouter>
+      </ZMPRouter>
     </QueryClientProvider>
   );
 }

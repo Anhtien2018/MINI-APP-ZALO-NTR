@@ -195,7 +195,11 @@ const FeedItem = forwardRef<HTMLDivElement, FeedItemProps>(
                   <svg className="feed-item__swipe-hand" viewBox="0 0 24 24" fill="#fff">
                     <path d="M11 2a1.5 1.5 0 0 1 1.5 1.5V11h.5V9a1.4 1.4 0 0 1 2.8 0v2h.5v-1.2a1.35 1.35 0 0 1 2.7 0V11h.5v-.4a1.3 1.3 0 0 1 2.5.5V16a6 6 0 0 1-6 6h-2.2a5.6 5.6 0 0 1-4-1.7l-3.7-3.8a1.45 1.45 0 0 1 2-2.1l1.6 1.4V3.5A1.5 1.5 0 0 1 11 2z" />
                   </svg>
-                  <span className="feed-item__swipe-label">Vuốt tiếp tại đây</span>
+                  <span className="feed-item__swipe-label">
+                    Vuốt tiếp
+                    <br />
+                    tại đây
+                  </span>
                 </div>
               )}
             </div>

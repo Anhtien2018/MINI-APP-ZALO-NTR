@@ -90,16 +90,18 @@
 }
 
 /* ── Left-edge swipe zone + animated hint ─────────────────── */
-/* Dải mép trái nằm TRÊN iframe (z-index 2 > iframe 1) để bắt cú vuốt dọc đổi
+/* Dải mép TRÁI nằm TRÊN iframe (z-index 2 > iframe 1) để bắt cú vuốt dọc đổi
    tour — iframe 360 nuốt touch nên nếu không có dải này user không cuộn feed
    được. touch-action: pan-y để cú vuốt dọc truyền xuống scroller .view360-feed
-   (cuộn snap sang tour khác), phần màn còn lại vẫn xoay 360 bình thường. */
+   (cuộn snap sang tour khác), phần màn còn lại vẫn xoay 360 bình thường.
+   top: 300px để chừa thanh công cụ trái của tour (?, la bàn, layer, map…) ở
+   nửa trên — dải chỉ chiếm nửa dưới mép trái, phía trên card đáy. */
 .feed-item__swipe-zone {
   position: absolute;
   left: 0;
-  top: 160px;
+  top: 300px;
   bottom: 0;
-  width: 62px;
+  width: 56px;
   z-index: 2;
   touch-action: pan-y;
   /* Affordance mờ nhẹ để vẫn thấy có vùng vuốt kể cả khi hint đã ẩn */
@@ -111,7 +113,10 @@
   --dir: -1;
   position: absolute;
   left: 8px;
-  top: 40%;
+  /* Neo theo bottom (không phải top:%) để khoảng cách với .v360-card (bottom
+     14px, cao ~84px) luôn đều trên mọi kích thước màn hình. */
+  bottom: 200px;
+  z-index: 3;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -200,7 +205,6 @@
 }
 
 .feed-item__swipe-label {
-  max-width: 80px;
   margin-top: 5px;
   font-size: 11.5px;
   font-weight: 700;

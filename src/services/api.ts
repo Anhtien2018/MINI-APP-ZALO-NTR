@@ -97,6 +97,8 @@ export async function getLarkPropertiesByType(
   return get<ILarkProperty[]>(url);
 }
 
+const SEARCH_FIELDS = ["tieu_de", "dia_chi_cu_the"];
+
 export interface IListingsFilter {
   page?: number;
   limit?: number;
@@ -142,15 +144,20 @@ export async function getLarkPropertiesPaginated(
   if (propertyType) url += `&filter[danh_muc_bds][_eq]=${encodeURIComponent(propertyType)}`;
   if (city) url += `&filter[tinh_thanh_pho_tw_duoc_phan_cong][id][_eq]=${encodeURIComponent(city)}`;
   if (district) url += `&filter[quan][lark_quan_id][id][_eq]=${encodeURIComponent(district)}`;
-  if (search) url += `&search=${encodeURIComponent(search)}`;
+  if (search) {
+    const q = encodeURIComponent(search.trim());
+    SEARCH_FIELDS.forEach((field, i) => {
+      url += `&filter[_and][0][_or][${i}][${field}][_icontains]=${q}`;
+    });
+  }
   if (priceRange) url += `&filter[khoang_tien][_eq]=${encodeURIComponent(priceRange)}`;
   if (hasLink3d) url += `&filter[link_3d][_nnull]=true`;
   if (features && features.length > 0) {
     const ids = features.map(encodeURIComponent).join(",");
     url +=
-      `&filter[_or][0][tien_ich_ben_ngoai_cua_san_pham][lark_tien_ich_ben_ngoai_cua__id][_in]=${ids}` +
-      `&filter[_or][1][tien_ich_phong_ngu_phong_chuc_nang_khac][lark_tien_ich_phong_ngu_phon_id][_in]=${ids}` +
-      `&filter[_or][2][tien_ich_khac_tien_ich_chung_cu_neu_co][lark_tien_ich_khac_tien_ich__id][_in]=${ids}`;
+      `&filter[_and][1][_or][0][tien_ich_ben_ngoai_cua_san_pham][lark_tien_ich_ben_ngoai_cua__id][_in]=${ids}` +
+      `&filter[_and][1][_or][1][tien_ich_phong_ngu_phong_chuc_nang_khac][lark_tien_ich_phong_ngu_phon_id][_in]=${ids}` +
+      `&filter[_and][1][_or][2][tien_ich_khac_tien_ich_chung_cu_neu_co][lark_tien_ich_khac_tien_ich__id][_in]=${ids}`;
   }
 
   const res = await http.get<IPropertiesResponse>(url);
