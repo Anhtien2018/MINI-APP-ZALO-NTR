@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQueries, useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery, useQueries, useQuery } from "@tanstack/react-query";
 import {
   getLarkPropertiesByType,
   getLarkPropertiesPaginated,
@@ -45,6 +45,8 @@ export function useLarkPropertiesMap(filter: IListingsFilter) {
   return useQuery({
     queryKey: ["properties", "map", filter],
     queryFn: () => getLarkPropertiesPaginated({ ...filter, page: 1, limit: 100 }),
+    // Giữ marker cũ trong lúc tải bộ lọc mới để map không bị unmount/chớp.
+    placeholderData: keepPreviousData,
   });
 }
 

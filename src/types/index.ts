@@ -61,6 +61,15 @@ export interface ILarkStatusOption {
   color: number;
 }
 
+// Tỉnh/thành: bbox (WGS84, phần đất liền) để map zoom tới tỉnh khi lọc.
+// Null khi admin chưa nhập.
+export interface ILarkProvince extends ILarkStatusOption {
+  min_lat?: number | null;
+  max_lat?: number | null;
+  min_lng?: number | null;
+  max_lng?: number | null;
+}
+
 export interface ILarkDistrict extends ILarkStatusOption {
   province_id: string;
 }
@@ -107,6 +116,7 @@ export interface ILarkProperty {
   vi_tri: ILarkViTri | null;
   duong_khu_dan_cu_neu_khong_co_de_trong: ILarkViTri | null;
   tai_len_hinh_anh_cua_bds: ILarkPropertyImage[] | null;
+  thumbnail?: ILarkPropertyImage | null;
   danh_muc_bds: ILarkStatusOption | null;
   loai_hinh_kinh_doanh_bat_dong_san_dich_vu: ILarkStatusOption | null;
   trang_thai: ILarkStatusOption | null;

@@ -65,6 +65,7 @@ interface MapState {
   mapCenter: [number, number] | null;
   mapZoom: number | null;
   setMapView: (center: [number, number], zoom: number) => void;
+  clearMapView: () => void;
 }
 
 export const useMapStore = create<MapState>((set) => ({
@@ -73,6 +74,7 @@ export const useMapStore = create<MapState>((set) => ({
   mapCenter: null,
   mapZoom: null,
   setMapView: (mapCenter, mapZoom) => set({ mapCenter, mapZoom }),
+  clearMapView: () => set({ mapCenter: null, mapZoom: null }),
 }));
 
 interface FavoritesState {

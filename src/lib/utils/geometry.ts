@@ -1,3 +1,5 @@
+import type { ILarkProvince } from "@/types";
+
 export interface LatLng {
   lat: number;
   lng: number;
@@ -19,4 +21,18 @@ export function isPointInPolygon(point: LatLng, polygon: LatLng[]): boolean {
     if (intersect) inside = !inside;
   }
   return inside;
+}
+
+export type Bounds = [[number, number], [number, number]];
+
+// Bbox tỉnh từ Directus (min/max lat/lng) → [[west, south], [east, north]]
+// cho fitBounds. Null khi tỉnh chưa được nhập đủ 4 giá trị.
+export function getProvinceBounds(p: ILarkProvince | undefined): Bounds | null {
+  if (!p) return null;
+  const { min_lat, max_lat, min_lng, max_lng } = p;
+  if (min_lat == null || max_lat == null || min_lng == null || max_lng == null) return null;
+  return [
+    [min_lng, min_lat],
+    [max_lng, max_lat],
+  ];
 }

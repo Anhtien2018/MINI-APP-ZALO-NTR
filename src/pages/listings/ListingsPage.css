@@ -339,17 +339,6 @@
   padding: 0 12px 14px;
 }
 
-.listing-section-empty {
-  padding: 32px 16px;
-  text-align: center;
-  color: #999;
-  font-size: 14px;
-  min-height: 80px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 /* Skeleton shared */
 .property-skeleton {
   border-radius: 10px;

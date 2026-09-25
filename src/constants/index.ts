@@ -28,9 +28,22 @@ export const LARK_PROPERTY_CARD_FIELDS = [
   "gia_cho_thue_gia_ban",
   "vi_tri",
   "duong_khu_dan_cu_neu_khong_co_de_trong",
+  // Vị trí hiển thị công khai = phường/quận/thành phố (xem
+  // getLarkPropertyLocation). Field quan hệ đọc được nhờ quyền public
+  // (permission 2122) có field GỐC — dotted path trong permission không có
+  // tác dụng. Không thêm dia_chi_cu_the / SĐT / tên chủ nhà (riêng tư).
+  "phuong.name",
+  "quan.lark_quan_id.name",
+  "tinh_thanh_pho_tw_duoc_phan_cong.name",
   "dien_tich_m2_rong",
   "dien_tich_m2_dai",
+  "danh_muc_bds.id",
+  "danh_muc_bds.name",
+  "loai_hinh_kinh_doanh_bat_dong_san_dich_vu.id",
+  "loai_hinh_kinh_doanh_bat_dong_san_dich_vu.name",
   "tai_len_hinh_anh_cua_bds",
+  // Ảnh cover công khai (getLarkPropertyFirstImage) — giống web.
+  "thumbnail",
   "link_3d",
 ].join(",");
 
@@ -40,6 +53,23 @@ export const LARK_PROPERTY_DETAIL_FIELDS = [
   "gia_deal_lai",
   "tien_dien_so",
   "tien_nuoc_so",
+  "vi_tri_san_pham.id",
+  "vi_tri_san_pham.name",
+  "khoang_tien.id",
+  "khoang_tien.name",
+  "tinh_thanh_pho_tw_duoc_phan_cong.id",
+  "phuong.id",
+  "quan.lark_quan_id.id",
+  "tinh_trang_bds.lark_tinh_trang_bds_id.id",
+  "tinh_trang_bds.lark_tinh_trang_bds_id.name",
+  "do_thiet_bi_ban_giao.lark_do_thiet_bi_ban_giao_id.id",
+  "do_thiet_bi_ban_giao.lark_do_thiet_bi_ban_giao_id.name",
+  "tien_ich_ben_ngoai_cua_san_pham.lark_tien_ich_ben_ngoai_cua__id.id",
+  "tien_ich_ben_ngoai_cua_san_pham.lark_tien_ich_ben_ngoai_cua__id.name",
+  "tien_ich_phong_ngu_phong_chuc_nang_khac.lark_tien_ich_phong_ngu_phon_id.id",
+  "tien_ich_phong_ngu_phong_chuc_nang_khac.lark_tien_ich_phong_ngu_phon_id.name",
+  "tien_ich_khac_tien_ich_chung_cu_neu_co.lark_tien_ich_khac_tien_ich__id.id",
+  "tien_ich_khac_tien_ich_chung_cu_neu_co.lark_tien_ich_khac_tien_ich__id.name",
   "nguoi_tao.id",
   "nguoi_tao.first_name",
   "nguoi_tao.email",

@@ -11,6 +11,7 @@ import type {
   IWebConfiguration,
   IHomeConfiguration,
   ILarkProperty,
+  ILarkProvince,
   ILarkStatusOption,
   ILarkDistrict,
   ILarkPhuong,
@@ -51,8 +52,8 @@ export async function getPropertyCategories(): Promise<ILarkStatusOption[]> {
   return get<ILarkStatusOption[]>(`${ENDPOINTS.propertyCategory}?sort=sort`);
 }
 
-export async function getCities(): Promise<ILarkStatusOption[]> {
-  return get<ILarkStatusOption[]>(ENDPOINTS.city);
+export async function getCities(): Promise<ILarkProvince[]> {
+  return get<ILarkProvince[]>(ENDPOINTS.city);
 }
 
 export async function getDistricts(): Promise<ILarkDistrict[]> {
@@ -87,8 +88,10 @@ export async function getLarkPropertiesByType(
   const url =
     `${ENDPOINTS.larkProperties}` +
     `?fields=${LARK_PROPERTY_CARD_FIELDS}` +
-    `&sort=-id` +
-    `&limit=${limit}`;
+    // Giống web: `id` làm tiebreaker vì record sync cùng đợt trùng thoi_gian_tao.
+    `&sort=-thoi_gian_tao,id` +
+    `&limit=${limit}` +
+    `&filter[loai_hinh_kinh_doanh_bat_dong_san_dich_vu][_eq]=${encodeURIComponent(listingTypeId)}`;
   return get<ILarkProperty[]>(url);
 }
 
@@ -128,11 +131,19 @@ export async function getLarkPropertiesPaginated(
   let url =
     `${ENDPOINTS.larkProperties}` +
     `?fields=${LARK_PROPERTY_CARD_FIELDS}` +
-    `&sort=-id` +
+    // Giống web: `id` làm tiebreaker vì record sync cùng đợt trùng thoi_gian_tao.
+    `&sort=-thoi_gian_tao,id` +
     `&limit=${limit}` +
     `&page=${page}` +
     `&meta=filter_count`;
 
+  // Không lọc `trang_thai`: public role không đọc được field này, và quyền
+  // đọc public đã tự giới hạn chỉ trả tin active (row filter trên Directus).
+  if (transactionType)
+    url += `&filter[loai_hinh_kinh_doanh_bat_dong_san_dich_vu][_eq]=${encodeURIComponent(transactionType)}`;
+  if (propertyType) url += `&filter[danh_muc_bds][_eq]=${encodeURIComponent(propertyType)}`;
+  if (city) url += `&filter[tinh_thanh_pho_tw_duoc_phan_cong][id][_eq]=${encodeURIComponent(city)}`;
+  if (district) url += `&filter[quan][lark_quan_id][id][_eq]=${encodeURIComponent(district)}`;
   if (search) {
     const q = encodeURIComponent(search.trim());
     SEARCH_FIELDS.forEach((field, i) => {
@@ -178,11 +189,13 @@ export async function getRelatedProperties(
   let url =
     `${ENDPOINTS.larkProperties}` +
     `?fields=${LARK_PROPERTY_CARD_FIELDS}` +
-    `&sort=-id` +
+    // Giống web: `id` làm tiebreaker vì record sync cùng đợt trùng thoi_gian_tao.
+    `&sort=-thoi_gian_tao,id` +
     `&limit=${limit}` +
     `&page=${page}` +
     `&meta=filter_count` +
-    `&filter[id][_neq]=${encodeURIComponent(currentId)}`;
+    `&filter[id][_neq]=${encodeURIComponent(currentId)}` +
+    `&filter[danh_muc_bds][_eq]=${encodeURIComponent(categoryId)}`;
 
   const res = await http.get<IPropertiesResponse>(url);
   return {
@@ -226,7 +239,12 @@ export function getLarkPropertyImageUrls(p: ILarkProperty): string[] {
     .map((img) => getLarkMediaUrl(img) as string);
 }
 
+// Ảnh cover giống web (coverImage): ưu tiên `thumbnail`, trống thì ảnh đầu
+// của tai_len_hinh_anh_cua_bds. Miniapp chỉ phát được file đã lưu vào
+// Directus Files (cần `id`).
 export function getLarkPropertyFirstImage(p: ILarkProperty): string {
+  const thumb = p.thumbnail;
+  if (thumb?.id) return getLarkMediaUrl(thumb) ?? "";
   return getLarkPropertyImageUrls(p)[0] ?? "";
 }
 
@@ -315,7 +333,14 @@ const VIDEO_FEED_FIELDS = [
   "gia_cho_thue_gia_ban",
   "vi_tri",
   "duong_khu_dan_cu_neu_khong_co_de_trong",
+  "phuong.name",
+  "quan.lark_quan_id.name",
+  "tinh_thanh_pho_tw_duoc_phan_cong.name",
   "tai_len_hinh_anh_cua_bds",
+  "loai_hinh_kinh_doanh_bat_dong_san_dich_vu.id",
+  "loai_hinh_kinh_doanh_bat_dong_san_dich_vu.name",
+  "danh_muc_bds.id",
+  "danh_muc_bds.name",
 ].join(",");
 
 // Video lấy từ CHÍNH property (field `video` trên lark_properties, pull
@@ -332,7 +357,8 @@ export async function getVideos(
     `${ENDPOINTS.larkProperties}` +
     `?fields=${VIDEO_FEED_FIELDS}` +
     `&filter[video][_nnull]=true` +
-    `&sort=-id` +
+    // Giống web: `id` làm tiebreaker vì record sync cùng đợt trùng thoi_gian_tao.
+    `&sort=-thoi_gian_tao,id` +
     `&limit=${limit}` +
     `&page=${page}` +
     `&meta=filter_count`;

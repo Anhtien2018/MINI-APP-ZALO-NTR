@@ -44,7 +44,10 @@ declare module "@goongmaps/goong-js" {
     getCenter(): { lng: number; lat: number };
     getZoom(): number;
     setCenter(center: [number, number]): GoongMap;
-    fitBounds(bounds: GoongLngLatBounds, options?: { padding?: number }): GoongMap;
+    fitBounds(
+      bounds: GoongLngLatBounds | [[number, number], [number, number]],
+      options?: { padding?: number },
+    ): GoongMap;
     on(type: "error", listener: (e: { error?: Error }) => void): GoongMap;
     on(type: "moveend", listener: () => void): GoongMap;
     once(type: "idle" | "load", listener: () => void): GoongMap;

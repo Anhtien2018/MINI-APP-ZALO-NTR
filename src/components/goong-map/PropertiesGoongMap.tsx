@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type {
   GoongMap as GoongMapInstance,
@@ -19,7 +19,7 @@ import { GOONG_MAPTILES_KEY, ROUTES } from "@/constants";
 import { GOONG_MAP_STYLE } from "@/constants/goong";
 import { useMapStore } from "@/store";
 import { loadGoongJs } from "@/utils/loadGoongJs";
-import { isPointInPolygon, type LatLng } from "@/lib/utils/geometry";
+import { isPointInPolygon, type Bounds, type LatLng } from "@/lib/utils/geometry";
 import "./GoongMap.css";
 
 const DEFAULT_CENTER = { lat: 16.0544, lng: 108.2022 };
@@ -47,6 +47,22 @@ interface MapPoint {
   coords: { lat: number; lng: number };
 }
 
+// Khung bao các điểm; null khi <2 điểm (1 điểm fitBounds sẽ zoom max).
+function getPointsBounds(points: MapPoint[]): Bounds | null {
+  if (points.length < 2) return null;
+  let [w, s, e, n] = [Infinity, Infinity, -Infinity, -Infinity];
+  for (const { coords } of points) {
+    w = Math.min(w, coords.lng);
+    e = Math.max(e, coords.lng);
+    s = Math.min(s, coords.lat);
+    n = Math.max(n, coords.lat);
+  }
+  return [
+    [w, s],
+    [e, n],
+  ];
+}
+
 export interface AreaSelectStatus {
   loading: boolean;
   error: boolean;
@@ -64,9 +80,13 @@ const IDLE_AREA_STATUS: AreaSelectStatus = {
 interface Props {
   properties: ILarkProperty[];
   filter: IListingsFilter;
+  // Bbox của tỉnh đang lọc (null khi không lọc tỉnh / tỉnh chưa có bbox).
+  cityBounds: Bounds | null;
+  // Đang tải bộ lọc mới — map vẫn giữ marker cũ, chỉ hiện banner.
+  loading?: boolean;
 }
 
-export function PropertiesGoongMap({ properties, filter }: Props) {
+export function PropertiesGoongMap({ properties, filter, cityBounds, loading }: Props) {
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<GoongMapInstance | null>(null);
@@ -86,7 +106,21 @@ export function PropertiesGoongMap({ properties, filter }: Props) {
   const filterRef = useRef(filter);
   const polylineRef = useRef<SVGPolylineElement | null>(null);
   const drawPointsRef = useRef<{ x: number; y: number }[]>([]);
-  const pointsRef = useRef<MapPoint[]>([]);
+  const points = useMemo<MapPoint[]>(
+    () =>
+      properties.flatMap((property) => {
+        const coords = getLarkPropertyCoordinates(property);
+        return coords ? [{ property, coords }] : [];
+      }),
+    [properties],
+  );
+  // The map is built once (init effect below); handlers and the marker
+  // effect read current data through refs instead of a stale closure.
+  const pointsRef = useRef<MapPoint[]>(points);
+  const cityBoundsRef = useRef(cityBounds);
+  // Marker.remove() fires the popup's "close" event — skip clearing
+  // selectedMarkerId while tearing down so it survives back navigation.
+  const isCleaningUpRef = useRef(false);
   // Bumped on every draw gesture; a response only applies if it's still the
   // most recent one requested — guards against a slower fetch resolving
   // after a newer polygon has already been drawn.
@@ -103,9 +137,24 @@ export function PropertiesGoongMap({ properties, filter }: Props) {
   }, [filter]);
 
   useEffect(() => {
+    cityBoundsRef.current = cityBounds;
+  }, [cityBounds]);
+
+  // Đổi tỉnh ở filter: bỏ view đã lưu (nếu không map đứng yên ở view cũ vì
+  // chỉ fit khi !mapCenter) và bay luôn tới tỉnh, không chờ fetch kết quả mới.
+  // Bỏ lọc tỉnh → kết quả mới về sẽ fit theo toàn bộ điểm.
+  const prevCityRef = useRef(filter.city);
+  useEffect(() => {
+    if (prevCityRef.current === filter.city) return;
+    prevCityRef.current = filter.city;
+    useMapStore.getState().clearMapView();
+    if (cityBounds) mapRef.current?.fitBounds(cityBounds, { padding: 48 });
+  }, [filter.city, cityBounds]);
+
+  useEffect(() => {
     setDrawMode("idle");
     setAreaStatus(IDLE_AREA_STATUS);
-  }, [properties]);
+  }, [points]);
 
   function getRelativePoint(e: React.PointerEvent<SVGSVGElement>): { x: number; y: number } {
     const rect = containerRef.current!.getBoundingClientRect();
@@ -291,16 +340,8 @@ export function PropertiesGoongMap({ properties, filter }: Props) {
   useEffect(() => {
     if (!containerRef.current || !GOONG_MAPTILES_KEY) return;
     let cancelled = false;
-    // Marker.remove() during cleanup fires the popup's "close" event — skip
-    // clearing selectedMarkerId in that case so it survives back navigation.
-    let isCleaningUp = false;
+    isCleaningUpRef.current = false;
     const extraMarkers = extraMarkersRef.current;
-
-    const points: MapPoint[] = properties.flatMap((property) => {
-      const coords = getLarkPropertyCoordinates(property);
-      return coords ? [{ property, coords }] : [];
-    });
-    pointsRef.current = points;
 
     loadGoongJs().then((goongjs) => {
       if (cancelled || !containerRef.current) return;
@@ -310,15 +351,19 @@ export function PropertiesGoongMap({ properties, filter }: Props) {
       const { selectedMarkerId, mapCenter, mapZoom, setSelectedMarkerId, setMapView } =
         useMapStore.getState();
 
-      const fallbackCenter = points[0]?.coords ?? DEFAULT_CENTER;
+      const initialPoints = pointsRef.current;
+      const fallbackCenter = initialPoints[0]?.coords ?? DEFAULT_CENTER;
       const map = new goongjs.Map({
         container: containerRef.current,
         style: GOONG_MAP_STYLE,
         center: mapCenter ?? [fallbackCenter.lng, fallbackCenter.lat],
-        zoom: mapZoom ?? (points.length > 0 ? 14 : 12),
+        zoom: mapZoom ?? (initialPoints.length > 0 ? 14 : 12),
       });
       map.on("error", () => {});
       map.on("moveend", () => {
+        // A resize-driven moveend on an empty result set would stamp the
+        // default center into the store and disable every later fit.
+        if (pointsRef.current.length === 0) return;
         const c = map.getCenter();
         setMapView([c.lng, c.lat], map.getZoom());
       });
@@ -373,7 +418,7 @@ export function PropertiesGoongMap({ properties, filter }: Props) {
         // Skip close events triggered by cleanup so the stored id survives
         // back navigation.
         popup.on("close", () => {
-          if (!isCleaningUp) setSelectedMarkerId(null);
+          if (!isCleaningUpRef.current) setSelectedMarkerId(null);
         });
 
         return new goongjs.Marker({ color: "#16a34a" })
@@ -383,23 +428,26 @@ export function PropertiesGoongMap({ properties, filter }: Props) {
       }
 
       createMarkerRef.current = buildMarker;
-      markersRef.current = points.map(({ property, coords }) => buildMarker(property, coords));
+      markersRef.current = initialPoints.map(({ property, coords }) =>
+        buildMarker(property, coords),
+      );
 
       // Restore the popup that was open before navigating away — wait for
       // "load" so tiles and markers are fully positioned before opening it.
       if (selectedMarkerId) {
-        const idx = points.findIndex((p) => p.property.id === selectedMarkerId);
+        const idx = initialPoints.findIndex((p) => p.property.id === selectedMarkerId);
         if (idx !== -1) {
           map.once("load", () => {
-            if (!isCleaningUp) markersRef.current[idx]?.togglePopup();
+            if (!isCleaningUpRef.current) markersRef.current[idx]?.togglePopup();
           });
         }
       }
 
-      if (points.length > 1 && !mapCenter) {
-        const bounds = new goongjs.LngLatBounds();
-        points.forEach((pt) => bounds.extend([pt.coords.lng, pt.coords.lat]));
-        map.fitBounds(bounds, { padding: 48 });
+      if (!mapCenter) {
+        // Lọc theo tỉnh: frame cả tỉnh thay vì các điểm — 1 điểm geocode lệch
+        // sang tỉnh khác không kéo khung rộng ra, và tỉnh 0-1 tin vẫn zoom.
+        const bounds = cityBoundsRef.current ?? getPointsBounds(initialPoints);
+        if (bounds) map.fitBounds(bounds, { padding: 48 });
       }
 
       mapRef.current = map;
@@ -411,7 +459,7 @@ export function PropertiesGoongMap({ properties, filter }: Props) {
 
     return () => {
       cancelled = true;
-      isCleaningUp = true;
+      isCleaningUpRef.current = true;
       resizeObserverRef.current?.disconnect();
       resizeObserverRef.current = null;
       markersRef.current.forEach((m) => m.remove());
@@ -422,7 +470,33 @@ export function PropertiesGoongMap({ properties, filter }: Props) {
       mapRef.current?.remove();
       mapRef.current = null;
     };
-  }, [properties]);
+    // Mount-once: rebuilding the map on every result change tore down the
+    // WebGL context and reloaded every tile, flashing the map white and
+    // cutting off the city-change fly animation. New results are pushed
+    // into the live map by the effect below.
+  }, []);
+
+  // New results → swap markers in place, and re-frame only when no view is
+  // stored (first load, or a city change cleared it).
+  useEffect(() => {
+    pointsRef.current = points;
+    const map = mapRef.current;
+    const buildMarker = createMarkerRef.current;
+    if (!map || !buildMarker) return; // Still initializing — init reads pointsRef.
+
+    // Lasso selection + its extra markers belonged to the previous result set
+    // (drawMode/areaStatus are reset by the effect near the top).
+    clearPolygonLayer(map);
+    extraMarkersRef.current.forEach((m) => m.remove());
+    extraMarkersRef.current.clear();
+    markersRef.current.forEach((m) => m.remove());
+    markersRef.current = points.map(({ property, coords }) => buildMarker(property, coords));
+
+    if (!useMapStore.getState().mapCenter) {
+      const bounds = cityBoundsRef.current ?? getPointsBounds(points);
+      if (bounds) map.fitBounds(bounds, { padding: 48 });
+    }
+  }, [points]);
 
   if (!GOONG_MAPTILES_KEY) {
     return <div className="goong-map__fallback">Thiếu cấu hình Goong Maps API key</div>;
@@ -485,7 +559,12 @@ export function PropertiesGoongMap({ properties, filter }: Props) {
         </span>
       </button>
 
-      {areaStatus.loading ? (
+      {loading ? (
+        <div className="goong-map__banner">
+          <span className="goong-map__banner-spinner" />
+          <span>Đang tải dữ liệu bản đồ…</span>
+        </div>
+      ) : areaStatus.loading ? (
         <div className="goong-map__banner">
           <span className="goong-map__banner-spinner" />
           <span>Đang lọc khu vực…</span>

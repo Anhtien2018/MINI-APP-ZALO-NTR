@@ -12,6 +12,7 @@ import {
 } from "@/hooks/useConfigQueries";
 import { useLarkPropertiesMap } from "@/hooks/useListingsQueries";
 import { PropertiesGoongMap } from "@/components/goong-map/PropertiesGoongMap";
+import { getProvinceBounds } from "@/lib/utils/geometry";
 import "./MapPage.css";
 
 function MapFilterSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
@@ -62,7 +63,10 @@ export function MapPage() {
     features: filter.features?.length ? filter.features : undefined,
   };
   const { data, isFetching } = useLarkPropertiesMap(mapFilter);
-  const properties = data?.data ?? [];
+  const cityBounds = useMemo(
+    () => (filter.city ? getProvinceBounds(cities.find((c) => c.id === filter.city)) : null),
+    [cities, filter.city],
+  );
 
   const propertiesWithCoords = useMemo(
     () =>
@@ -197,8 +201,16 @@ export function MapPage() {
         </div>
 
         <div className="map-page__map">
-          {!isFetching ? (
-            <PropertiesGoongMap properties={propertiesWithCoords} filter={mapFilter} />
+          {/* Skeleton chỉ cho lần tải đầu. Đổi filter thì giữ map (dữ liệu cũ nhờ
+              keepPreviousData) + banner loading — unmount map mỗi lần fetch
+              làm tile tải lại từ đầu, chớp trắng và cắt animation zoom. */}
+          {data ? (
+            <PropertiesGoongMap
+              properties={propertiesWithCoords}
+              filter={mapFilter}
+              cityBounds={cityBounds}
+              loading={isFetching}
+            />
           ) : (
             <div className="map-page__map-skeleton skeleton-pulse" />
           )}

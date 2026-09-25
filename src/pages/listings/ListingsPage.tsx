@@ -12,9 +12,12 @@ import { preloadImages } from "@/utils/preloadImages";
 import { ROUTES } from "@/constants";
 import "./ListingsPage.css";
 
+// Giống trang chủ web (HomeContent): 3 loại giao dịch đầu của
+// web_configuration.listing_type, section không có tin thì ẩn.
 const SECTION_LABELS = [
-  { title: "Căn hộ cho thuê", highlight: "đề xuất", highlightColor: "#000", key: "cho-thue" },
-  { title: "Danh sách", highlight: "BĐS đang bán", key: "ds-cho-thue" },
+  { title: "Bất động sản", highlight: "cho thuê", key: "cho-thue" },
+  { title: "Bất động sản", highlight: "đang bán", key: "dang-ban" },
+  { title: "Bất động sản", highlight: "dự án", key: "du-an" },
 ];
 
 export function ListingsPage() {
@@ -27,14 +30,15 @@ export function ListingsPage() {
 
   const section0 = useLarkPropertiesByType(listingTypes[0]?.id, statusActive, 6);
   const section1 = useLarkPropertiesByType(listingTypes[1]?.id, statusActive, 6);
-  const sections = [section0, section1] as const;
+  const section2 = useLarkPropertiesByType(listingTypes[2]?.id, statusActive, 6);
+  const sections = [section0, section1, section2] as const;
 
   useEffect(() => {
     sections.forEach((s) => {
       if (s.data) preloadImages(s.data.flatMap(getLarkPropertyImageUrls));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [section0.data, section1.data]);
+  }, [section0.data, section1.data, section2.data]);
 
   const handleViewAll = (typeIndex: number) => {
     const lt = listingTypes[typeIndex];
@@ -50,21 +54,18 @@ export function ListingsPage() {
         {SECTION_LABELS.map((section, i) => {
           const items = sections[i].data ?? [];
           const isLoading = sections[i].isLoading;
+          if (!isLoading && items.length === 0) return null;
 
           return (
             <section key={section.key} className="listing-section">
               <SectionHeader
                 title={section.title}
                 titleHighlight={section.highlight}
-                highlightColor={section.highlightColor}
                 onViewAll={() => handleViewAll(i)}
-                viewAllLabel={i === 0 ? undefined : "Xem tất cả"}
               />
 
               {isLoading ? (
                 <PropertyGridSkeleton />
-              ) : items.length === 0 ? (
-                <EmptyState />
               ) : (
                 <div className="listing-section__grid">
                   {items.slice(0, 6).map((p) => (
@@ -77,14 +78,6 @@ export function ListingsPage() {
         })}
       </div>
     </PageLayout>
-  );
-}
-
-function EmptyState() {
-  return (
-    <div className="listing-section-empty">
-      <p>Không có dữ liệu</p>
-    </div>
   );
 }
 
