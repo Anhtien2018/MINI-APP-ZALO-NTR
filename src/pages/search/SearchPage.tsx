@@ -4,7 +4,7 @@ import { PageLayout } from "@/components/layout/PageLayout";
 import { PropertyCard } from "@/components/property-card/PropertyCard";
 import { FilterModal } from "@/components/filter-modal/FilterModal";
 import { QuickFilterBar } from "@/components/quick-filter-bar/QuickFilterBar";
-import { useListingsStore } from "@/store";
+import { useListingsStore, type ListingsFilter } from "@/store";
 import {
   useWebConfig,
   useBusinessTypes,
@@ -13,7 +13,23 @@ import {
   useDistricts,
 } from "@/hooks/useConfigQueries";
 import { useLarkPropertiesSearch } from "@/hooks/useListingsQueries";
+import { APP_ICON_URL, ROUTES } from "@/constants";
+import iconShare from "@/assets/icons/social/share.svg";
 import "@/pages/listings/ListingsPage.css";
+
+// Query keys shared by both directions: reading a deep-link URL into the
+// filter store, and serializing the current filter back into a share link.
+function filterToSearchQuery(filter: ListingsFilter): string {
+  const params = new URLSearchParams();
+  if (filter.transactionType) params.set("type", filter.transactionType);
+  if (filter.propertyType) params.set("propertyType", filter.propertyType);
+  if (filter.city) params.set("city", filter.city);
+  if (filter.district) params.set("district", filter.district);
+  if (filter.priceRange) params.set("priceRange", filter.priceRange);
+  if (filter.search) params.set("search", filter.search);
+  if (filter.features?.length) params.set("features", filter.features.join(","));
+  return params.toString();
+}
 
 function SearchFilterSelect(props: React.SelectHTMLAttributes<HTMLSelectElement>) {
   return (
@@ -65,6 +81,7 @@ export function SearchPage() {
   const filter = useListingsStore((s) => s.filter);
   const setFilter = useListingsStore((s) => s.setFilter);
   const filtersOpen = useListingsStore((s) => s.filtersOpen);
+  const setFiltersOpen = useListingsStore((s) => s.setFiltersOpen);
   const [filterOpen, setFilterOpen] = useState(false);
 
   const statusActive = webConfig?.status_properties?.active ?? undefined;
@@ -72,12 +89,31 @@ export function SearchPage() {
   const observerRef = useRef<IntersectionObserver | null>(null);
   const midpointRef = useRef<HTMLDivElement>(null);
 
+  // Hydrate the filter store from a deep link's query string (e.g. one
+  // opened via the share button below) so the results the sharer saw are
+  // reproduced for whoever opens the link.
   useEffect(() => {
-    const typeFromUrl = searchParams.get("type") ?? "";
-    const searchFromUrl = searchParams.get("search") ?? "";
-    if (typeFromUrl) setFilter({ transactionType: typeFromUrl });
-    if (searchFromUrl) setFilter({ search: searchFromUrl });
-  }, [searchParams, setFilter]);
+    const next: Partial<ListingsFilter> = {};
+    const type = searchParams.get("type");
+    const propertyType = searchParams.get("propertyType");
+    const city = searchParams.get("city");
+    const district = searchParams.get("district");
+    const priceRange = searchParams.get("priceRange");
+    const search = searchParams.get("search");
+    const features = searchParams.get("features");
+    if (type) next.transactionType = type;
+    if (propertyType) next.propertyType = propertyType;
+    if (city) next.city = city;
+    if (district) next.district = district;
+    if (priceRange) next.priceRange = priceRange;
+    if (search) next.search = search;
+    if (features) next.features = features.split(",").filter(Boolean);
+    if (Object.keys(next).length) setFilter(next);
+    // Advanced fields live behind the collapsed "Lọc nâng cao" panel — open
+    // it so the recipient of a shared link actually sees the filled selects,
+    // not just a filtered list with no visible explanation why.
+    if (propertyType || city || district || priceRange) setFiltersOpen(true);
+  }, [searchParams, setFilter, setFiltersOpen]);
 
   const {
     data,
@@ -98,6 +134,24 @@ export function SearchPage() {
 
   const properties = data?.pages.flatMap((p) => p.data) ?? [];
   const total = data?.pages[0]?.total ?? 0;
+
+  const handleShare = async () => {
+    const query = filterToSearchQuery(filter);
+    try {
+      const { openShareSheet } = await import("zmp-sdk/apis");
+      await openShareSheet({
+        type: "zmp_deep_link",
+        data: {
+          title: filter.search ? `Tìm kiếm: ${filter.search}` : "Kết quả tìm kiếm bất động sản",
+          thumbnail: APP_ICON_URL,
+          path: query ? `${ROUTES.SEARCH}?${query}` : ROUTES.SEARCH,
+          description: total ? `Tìm thấy ${total} bất động sản phù hợp` : undefined,
+        },
+      });
+    } catch {
+      /* zmp-sdk chỉ chạy trong môi trường Zalo, bỏ qua ngoài môi trường đó */
+    }
+  };
 
   useEffect(() => {
     if (observerRef.current) observerRef.current.disconnect();
@@ -129,8 +183,15 @@ export function SearchPage() {
   return (
     <PageLayout>
 
-      <div className="listings-toolbar">
-        <QuickFilterBar />
+      <div className="listings-toolbar listings-toolbar__row">
+        <div className="listings-toolbar__row-search">
+          <QuickFilterBar />
+        </div>
+        {hasFilter && (
+          <button className="listings-toolbar__share-btn" onClick={handleShare} aria-label="Chia sẻ">
+            <img src={iconShare} width={18} height={18} alt="" />
+          </button>
+        )}
       </div>
 
       {filtersOpen && (

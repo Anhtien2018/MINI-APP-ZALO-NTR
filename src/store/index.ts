@@ -21,6 +21,7 @@ interface ListingsState {
   // into any page without prop-drilling the open/closed state.
   filtersOpen: boolean;
   toggleFiltersOpen: () => void;
+  setFiltersOpen: (open: boolean) => void;
 }
 
 export const EMPTY_FILTER: ListingsFilter = {
@@ -52,6 +53,7 @@ export const useListingsStore = create<ListingsState>((set) => ({
   },
   filtersOpen: false,
   toggleFiltersOpen: () => set((s) => ({ filtersOpen: !s.filtersOpen })),
+  setFiltersOpen: (open) => set({ filtersOpen: open }),
 }));
 
 interface MapState {

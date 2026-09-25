@@ -16,7 +16,7 @@ import {
 import { useView360Store } from "@/store";
 import { preloadImages } from "@/lib/mediaPreload";
 import type { ILarkProperty } from "@/types";
-import { ROUTES, WEB_APP_URL } from "@/constants";
+import { APP_ICON_URL, ROUTES, WEB_APP_URL } from "@/constants";
 import { callPhone, openZalo } from "@/lib/contact";
 import "./View360Page.css";
 import { PageLayout } from "@/components/layout/PageLayout";
@@ -34,11 +34,19 @@ function ActionButtons({ property }: { property: ILarkProperty }) {
   const slug = generatePropertySlug(property.tieu_de, property.lark_record_id);
 
   const handleShare = async () => {
-    const link = WEB_APP_URL ? `${WEB_APP_URL}/listings/${slug}` : window.location.href;
     try {
       const { openShareSheet } = await import("zmp-sdk/apis");
-      await openShareSheet({ type: "link", data: { link } });
+      await openShareSheet({
+        type: "zmp_deep_link",
+        data: {
+          title: property.tieu_de || "Bất động sản",
+          thumbnail: getLarkPropertyFirstImage(property) ?? APP_ICON_URL,
+          path: ROUTES.DETAIL(slug),
+          description: getLarkPropertyLocation(property),
+        },
+      });
     } catch {
+      const link = WEB_APP_URL ? `${WEB_APP_URL}/listings/${slug}` : window.location.href;
       navigator.share?.({ title: property.tieu_de, url: link });
     }
   };

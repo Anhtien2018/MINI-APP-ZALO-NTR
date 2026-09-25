@@ -2,7 +2,7 @@ import iconPhone from "@/assets/icons/social/phone.svg";
 import iconShare from "@/assets/icons/social/share.svg";
 import iconZalo from "@/assets/icons/social/zalo.svg";
 import { PageLayout } from "@/components/layout/PageLayout";
-import { ROUTES, WEB_APP_URL } from "@/constants";
+import { APP_ICON_URL, ROUTES, WEB_APP_URL } from "@/constants";
 import { useHomeConfig, useVideos, useWebConfig } from "@/hooks/useConfigQueries";
 import { callPhone, openZalo } from "@/lib/contact";
 import { preloadImages, preloadVideo, releaseWarmVideos } from "@/lib/mediaPreload";
@@ -44,11 +44,19 @@ function ActionButtons({ property, active }: { property: IVideoProperty | null; 
   const wiggleClass = active ? " vfeed-action-btn--wiggle" : "";
 
   const handleShare = async () => {
-    const link = WEB_APP_URL && slug ? `${WEB_APP_URL}/listings/${slug}` : window.location.href;
     try {
       const { openShareSheet } = await import("zmp-sdk/apis");
-      await openShareSheet({ type: "link", data: { link } });
+      await openShareSheet({
+        type: "zmp_deep_link",
+        data: {
+          title: property?.tieu_de || "Bất động sản",
+          thumbnail: getVideoPosterUrl(property) ?? APP_ICON_URL,
+          path: slug ? ROUTES.DETAIL(slug) : undefined,
+          description: property ? getLarkPropertyLocation(property) : undefined,
+        },
+      });
     } catch {
+      const link = WEB_APP_URL && slug ? `${WEB_APP_URL}/listings/${slug}` : window.location.href;
       navigator.share?.({ title: property?.tieu_de ?? "", url: link });
     }
   };

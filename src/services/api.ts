@@ -1,7 +1,6 @@
 import axios from "axios";
 import {
   API_URL,
-  DIRECTUS_PUBLIC_TOKEN,
   ENDPOINTS,
   LARK_PROPERTY_CARD_FIELDS,
   LARK_PROPERTY_DETAIL_FIELDS,
@@ -20,13 +19,13 @@ import type {
   IVideoPropertyRow,
   ILarkAttachment,
   ILarkPropertyImage,
+  ILarkViTri,
 } from "@/types";
 
 const http = axios.create({
   baseURL: API_URL,
   timeout: 10000,
   headers: {
-    Authorization: `Bearer ${DIRECTUS_PUBLIC_TOKEN}`,
     "Content-Type": "application/json",
   },
 });
@@ -85,19 +84,15 @@ export async function getLarkPropertiesByType(
   statusId: string | null,
   limit = 6,
 ): Promise<ILarkProperty[]> {
-  let url =
+  const url =
     `${ENDPOINTS.larkProperties}` +
     `?fields=${LARK_PROPERTY_CARD_FIELDS}` +
-    `&sort=-thoi_gian_tao` +
-    `&limit=${limit}` +
-    `&filter[loai_hinh_kinh_doanh_bat_dong_san_dich_vu][_eq]=${encodeURIComponent(listingTypeId)}`;
-  if (statusId) {
-    url += `&filter[trang_thai][_eq]=${encodeURIComponent(statusId)}`;
-  }
+    `&sort=-id` +
+    `&limit=${limit}`;
   return get<ILarkProperty[]>(url);
 }
 
-const SEARCH_FIELDS = ["tieu_de", "dia_chi_cu_the"];
+const SEARCH_FIELDS = ["tieu_de"];
 
 export interface IListingsFilter {
   page?: number;
@@ -133,17 +128,11 @@ export async function getLarkPropertiesPaginated(
   let url =
     `${ENDPOINTS.larkProperties}` +
     `?fields=${LARK_PROPERTY_CARD_FIELDS}` +
-    `&sort=-thoi_gian_tao` +
+    `&sort=-id` +
     `&limit=${limit}` +
     `&page=${page}` +
     `&meta=filter_count`;
 
-  if (status) url += `&filter[trang_thai][_eq]=${encodeURIComponent(status)}`;
-  if (transactionType)
-    url += `&filter[loai_hinh_kinh_doanh_bat_dong_san_dich_vu][_eq]=${encodeURIComponent(transactionType)}`;
-  if (propertyType) url += `&filter[danh_muc_bds][_eq]=${encodeURIComponent(propertyType)}`;
-  if (city) url += `&filter[tinh_thanh_pho_tw_duoc_phan_cong][id][_eq]=${encodeURIComponent(city)}`;
-  if (district) url += `&filter[quan][lark_quan_id][id][_eq]=${encodeURIComponent(district)}`;
   if (search) {
     const q = encodeURIComponent(search.trim());
     SEARCH_FIELDS.forEach((field, i) => {
@@ -189,13 +178,11 @@ export async function getRelatedProperties(
   let url =
     `${ENDPOINTS.larkProperties}` +
     `?fields=${LARK_PROPERTY_CARD_FIELDS}` +
-    `&sort=-thoi_gian_tao` +
+    `&sort=-id` +
     `&limit=${limit}` +
     `&page=${page}` +
     `&meta=filter_count` +
-    `&filter[id][_neq]=${encodeURIComponent(currentId)}` +
-    `&filter[danh_muc_bds][_eq]=${encodeURIComponent(categoryId)}`;
-  if (statusId) url += `&filter[trang_thai][_eq]=${encodeURIComponent(statusId)}`;
+    `&filter[id][_neq]=${encodeURIComponent(currentId)}`;
 
   const res = await http.get<IPropertiesResponse>(url);
   return {
@@ -262,13 +249,24 @@ export function getLarkPropertyLocation(p: {
   phuong?: ILarkPhuong | null;
   quan?: Array<{ lark_quan_id: ILarkDistrict }> | null;
   tinh_thanh_pho_tw_duoc_phan_cong?: ILarkStatusOption | null;
+  vi_tri?: ILarkViTri | null;
+  duong_khu_dan_cu_neu_khong_co_de_trong?: ILarkViTri | null;
 }): string {
   const parts = [
     p.phuong?.name,
     relationNameOf(p.quan?.[0]?.lark_quan_id),
     p.tinh_thanh_pho_tw_duoc_phan_cong?.name,
   ].filter((s): s is string => !!s);
-  return parts.join(", ");
+  if (parts.length) return parts.join(", ");
+
+  // Public API không cho đọc phuong/quan/thành phố → lấy từ vùng hành chính
+  // của field Location (adname = phường/quận, cityname/pname = thành phố).
+  // Vẫn KHÔNG dùng address/full_address vì có số nhà.
+  const loc = p.vi_tri ?? p.duong_khu_dan_cu_neu_khong_co_de_trong;
+  const area = [loc?.adname, loc?.cityname || loc?.pname]
+    .map((s) => s?.trim())
+    .filter((s): s is string => !!s);
+  return area.filter((s, i) => area.indexOf(s) === i).join(", ");
 }
 
 export function getLarkPropertyCoordinates(p: ILarkProperty): { lat: number; lng: number } | null {
@@ -317,15 +315,7 @@ const VIDEO_FEED_FIELDS = [
   "gia_cho_thue_gia_ban",
   "vi_tri",
   "duong_khu_dan_cu_neu_khong_co_de_trong",
-  "dia_chi_cu_the",
-  "phuong.name",
-  "quan.lark_quan_id.name",
-  "tinh_thanh_pho_tw_duoc_phan_cong.name",
   "tai_len_hinh_anh_cua_bds",
-  "loai_hinh_kinh_doanh_bat_dong_san_dich_vu.id",
-  "loai_hinh_kinh_doanh_bat_dong_san_dich_vu.name",
-  "danh_muc_bds.id",
-  "danh_muc_bds.name",
 ].join(",");
 
 // Video lấy từ CHÍNH property (field `video` trên lark_properties, pull
@@ -342,11 +332,10 @@ export async function getVideos(
     `${ENDPOINTS.larkProperties}` +
     `?fields=${VIDEO_FEED_FIELDS}` +
     `&filter[video][_nnull]=true` +
-    `&sort=-thoi_gian_tao,id` +
+    `&sort=-id` +
     `&limit=${limit}` +
     `&page=${page}` +
     `&meta=filter_count`;
-  if (statusId) url += `&filter[trang_thai][_eq]=${encodeURIComponent(statusId)}`;
 
   const res = await http.get<{ data: IVideoPropertyRow[]; meta?: { filter_count?: number } }>(url);
   return {

@@ -1,10 +1,7 @@
 export const API_URL = "https://cms.nguyenthinhreal.org";
 export const WEB_APP_URL = import.meta.env.VITE_WEB_APP_URL as string;
-// Read-only Directus static token (scoped role, safe for a client bundle) —
-// never the admin token, which must stay server-only. Same token/role as the
-// web app's NEXT_PUBLIC_DIRECTUS_PUBLIC_TOKEN.
-export const DIRECTUS_PUBLIC_TOKEN = import.meta.env
-  .VITE_DIRECTUS_PUBLIC_TOKEN as string;
+// Fallback share thumbnail — must match app-config.json's `app.icon`.
+export const APP_ICON_URL = "https://cms.nguyenthinhreal.org/assets/logo.png";
 export const GOONG_MAPTILES_KEY = import.meta.env.VITE_GOONG_MAPTILES_KEY as string;
 export const LARK_BASE_URL = "https://open.larksuite.com/open-apis";
 
@@ -31,44 +28,18 @@ export const LARK_PROPERTY_CARD_FIELDS = [
   "gia_cho_thue_gia_ban",
   "vi_tri",
   "duong_khu_dan_cu_neu_khong_co_de_trong",
-  "dia_chi_cu_the",
-  // Vị trí hiển thị công khai = phường/quận/thành phố (xem
-  // getLarkPropertyLocation) — card nào cũng cần 3 field này
-  "phuong.name",
-  "quan.lark_quan_id.name",
-  "tinh_thanh_pho_tw_duoc_phan_cong.name",
   "dien_tich_m2_rong",
   "dien_tich_m2_dai",
-  "danh_muc_bds.id",
-  "danh_muc_bds.name",
-  "loai_hinh_kinh_doanh_bat_dong_san_dich_vu.id",
-  "loai_hinh_kinh_doanh_bat_dong_san_dich_vu.name",
   "tai_len_hinh_anh_cua_bds",
-  "trang_thai.id",
-  "trang_thai.name",
-  "so_dien_thoai_chu_nha",
-  "ten_chu_nha",
   "link_3d",
 ].join(",");
 
 export const LARK_PROPERTY_DETAIL_FIELDS = [
   ...LARK_PROPERTY_CARD_FIELDS.split(","),
-  "ghi_chu_them",
   "link_3d",
   "gia_deal_lai",
   "tien_dien_so",
   "tien_nuoc_so",
-  "thong_tin_can_ho_bao_nhieu_tang",
-  "mat_duong_bao_nhieu_met",
-  "vi_tri_san_pham.id",
-  "vi_tri_san_pham.name",
-  "khoang_tien.id",
-  "khoang_tien.name",
-  "tinh_thanh_pho_tw_duoc_phan_cong.id",
-  "tinh_thanh_pho_tw_duoc_phan_cong.name",
-  "phuong.id",
-  "phuong.name",
-  "quan.lark_quan_id.*",
   "nguoi_tao.id",
   "nguoi_tao.first_name",
   "nguoi_tao.email",
@@ -76,16 +47,6 @@ export const LARK_PROPERTY_DETAIL_FIELDS = [
   "nguoi_sale.first_name",
   "nguoi_sale.email",
   "dia_diem_lan_can",
-  "tinh_trang_bds.lark_tinh_trang_bds_id.id",
-  "tinh_trang_bds.lark_tinh_trang_bds_id.name",
-  "do_thiet_bi_ban_giao.lark_do_thiet_bi_ban_giao_id.id",
-  "do_thiet_bi_ban_giao.lark_do_thiet_bi_ban_giao_id.name",
-  "tien_ich_ben_ngoai_cua_san_pham.lark_tien_ich_ben_ngoai_cua__id.id",
-  "tien_ich_ben_ngoai_cua_san_pham.lark_tien_ich_ben_ngoai_cua__id.name",
-  "tien_ich_phong_ngu_phong_chuc_nang_khac.lark_tien_ich_phong_ngu_phon_id.id",
-  "tien_ich_phong_ngu_phong_chuc_nang_khac.lark_tien_ich_phong_ngu_phon_id.name",
-  "tien_ich_khac_tien_ich_chung_cu_neu_co.lark_tien_ich_khac_tien_ich__id.id",
-  "tien_ich_khac_tien_ich_chung_cu_neu_co.lark_tien_ich_khac_tien_ich__id.name",
 ].join(",");
 
 export const COLORS = {
